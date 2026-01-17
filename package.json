@@ -1,0 +1,30 @@
+{
+  "name": "cozagrac",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "dev:client": "npm --prefix apps/frontend run dev",
+    "dev:server": "npm --prefix apps/backend run dev",
+    "dev:typecheck": "npm --prefix apps/backend run typecheck",
+    "dev": "concurrently -n CLIENT,SERVER,TYPECHECK -c magenta,green,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:typecheck\"",
+    "build:client": "npm --prefix apps/frontend run build",
+    "build:server": "npm --prefix apps/backend run build",
+    "build": "npm run build:client && npm run build:server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kvbson/CoZagrac.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kvbson/CoZagrac/issues"
+  },
+  "homepage": "https://github.com/kvbson/CoZagrac#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
