@@ -20,6 +20,8 @@ apps/frontend/.vite/
 
 # backend
 apps/backend/dist/
+apps/backend/generated/prisma
+apps/backend/src/db/scripts/expose_db_tolocal.bash
 
 # =========================
 # TypeScript
@@ -60,11 +62,6 @@ Desktop.ini
 # Testing / Coverage
 # =========================
 coverage/
-
-# =========================
-# Prisma (if you add it)
-# =========================
-prisma/migrations/
 
 # =========================
 # Misc

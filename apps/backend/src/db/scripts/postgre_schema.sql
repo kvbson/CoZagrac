@@ -1,5 +1,7 @@
---TODO: przejrzeć maxLengthy varcharów i dostosować przed uruchomieniem skryptu
+--TODO: przejrzeć maxLengthy varcharów
 
+BEGIN;
+SET search_path TO public;
 -- =========================
 -- EXTENSIONS
 -- =========================
@@ -177,9 +179,9 @@ CREATE TABLE IF NOT EXISTS game_publishers (
 CREATE TABLE IF NOT EXISTS game_embeddings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   steam_appid integer NOT NULL,
-  embedding vector NOT NULL,
+  embedding vector(1536) NOT NULL,
   model_name varchar,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
 
   FOREIGN KEY (steam_appid)
     REFERENCES game_info (steam_appid)
@@ -189,9 +191,9 @@ CREATE TABLE IF NOT EXISTS game_embeddings (
 CREATE TABLE IF NOT EXISTS user_embeddings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  embedding vector NOT NULL,
+  embedding vector(1536) NOT NULL,
   model_name varchar,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
 
   FOREIGN KEY (user_id)
     REFERENCES users (id)
@@ -377,6 +379,8 @@ SET search_vector =
 CREATE INDEX IF NOT EXISTS idx_game_info_search_vector
 ON game_info
 USING GIN (search_vector);
+
+COMMIT;
 
 -- example Text search query
 -- SELECT steam_appid, name
