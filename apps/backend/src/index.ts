@@ -1,7 +1,7 @@
+import './env';
 import express from 'express';
 import helmet from 'helmet';
-import 'dotenv/config';
-import { prisma } from './db/init.js';
+import { pool } from './db/init.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -39,8 +39,7 @@ async function startServer() {
 
   const shutdown = async () => {
     console.log('Shutting down server...');
-    await prisma.$disconnect();
-
+    await pool.end();
     server.close(() => {
       console.log('Server closed.');
       process.exit(0);
