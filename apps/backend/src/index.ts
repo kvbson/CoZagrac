@@ -2,6 +2,7 @@ import './env';
 import express from 'express';
 import helmet from 'helmet';
 import { pool } from './db/init.js';
+import { checkDbConnection } from './db/utils/healthCheck.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -32,6 +33,14 @@ async function startServer() {
   console.log(`[ENV] PORT: ${PORT}`);
   const server = isDev ? app.listen(PORT, onSuccess) : app.listen(PORT, '0.0.0.0', onSuccess);
 
+  try {
+    await checkDbConnection();
+    console.log('Database connection successful.');
+  } catch (err) {
+    console.error('Database connection failed:', err);
+    process.exit(1);
+  }
+
   // Set server timeouts
   server.timeout = 70000; // 70 seconds
   server.keepAliveTimeout = 65000;
@@ -40,6 +49,7 @@ async function startServer() {
   const shutdown = async () => {
     console.log('Shutting down server...');
     await pool.end();
+    console.log('Database connections closed.');
     server.close(() => {
       console.log('Server closed.');
       process.exit(0);
