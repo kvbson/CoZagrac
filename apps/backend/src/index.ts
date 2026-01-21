@@ -1,8 +1,8 @@
-import './env';
+import { pool } from '@/db/init.js';
+import { checkDbConnection } from '@/db/utils/healthCheck.js';
+import '@/env';
 import express from 'express';
 import helmet from 'helmet';
-import { pool } from './db/init.js';
-import { checkDbConnection } from './db/utils/healthCheck.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;

@@ -1,10 +1,24 @@
-import path from 'path';
 import dotenv from 'dotenv';
+import path from 'path';
+import { z } from 'zod';
 
 dotenv.config({
-  path: path.resolve(process.cwd(), '../../.env'),
+  path: path.resolve(process.cwd(), '.env'),
 });
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL missing');
-}
+const envSchema = z.object({
+  DATABASE_URL: z.string().min(1),
+  PORT: z.string().min(4),
+  NODE_ENV: z.enum(['development', 'production']).default('development'),
+});
+
+export const env = (() => {
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    console.error(z.treeifyError(parsed.error));
+    throw new Error('Invalid environment variables');
+  }
+
+  return parsed.data;
+})();

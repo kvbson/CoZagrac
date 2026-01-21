@@ -1,10 +1,9 @@
-// drizzle.config.ts
+import '@/env.js';
 import type { Config } from 'drizzle-kit';
-import './src/env.ts';
 
 export default {
   dialect: 'postgresql',
-  schema: './src/db/schema.ts',
+  schema: './drizzle/schema.ts',
   out: './drizzle',
   casing: 'camelCase',
   dbCredentials: {
