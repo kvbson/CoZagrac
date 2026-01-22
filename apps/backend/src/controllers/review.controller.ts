@@ -1,4 +1,4 @@
-import { getGameReviewsHttpSchema } from '@/schemas/review.http.js';
+import { getGameReviewsHttpSchema } from '@/schemas/review.zod.js';
 import { reviewService } from '@/services/review.service.js';
 import { Request, Response } from 'express';
 

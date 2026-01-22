@@ -4,7 +4,7 @@ import {
   GetUserQuery,
   UpdateUserBody,
   UpdateUserParams,
-} from '@/schemas/user.http.js';
+} from '@/schemas/user.zod.js';
 import { userService } from '@/services/user.service.js';
 import { Request, Response } from 'express';
 

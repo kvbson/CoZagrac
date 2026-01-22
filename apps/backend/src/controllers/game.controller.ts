@@ -1,4 +1,4 @@
-import { getGameInfoByAppIdHttpSchema } from '@/schemas/game.http.js';
+import { getGameInfoByAppIdHttpSchema } from '@/schemas/game.zod.js';
 import { gameService } from '@/services/game.service.js';
 import { Request, Response } from 'express';
 

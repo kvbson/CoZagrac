@@ -1,6 +1,6 @@
 import { getGameInfoByAppId } from '@/controllers/game.controller.js';
 import { validate } from '@/middlewares/validate.js';
-import { getGameInfoByAppIdHttpSchema } from '@/schemas/game.http.js';
+import { getGameInfoByAppIdHttpSchema } from '@/schemas/game.zod.js';
 import { Router } from 'express';
 
 const router = Router();

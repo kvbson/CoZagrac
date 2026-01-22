@@ -9,7 +9,7 @@ import {
   gameScreenshots,
   genres,
 } from '@/drizzle/schema.js';
-import { CreateGameInput } from '@/schemas/game.http.js';
+import { CreateGameInput } from '@/schemas/game.zod.js';
 import { Tx } from '@/types/db.types.js';
 import { GameInfoResult, GamePayload } from '@/types/game.types.js';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -33,6 +33,7 @@ export const gameService = {
   },
 
   async getByAppId(appId: number): Promise<GameInfoResult | null> {
+    //TODO: maybe separate into diff queries later instead of left joins (zobacz ktore schematy maja najwiecej danych dla danej gry i je rozdziel)
     const rows = await db
       .select({
         game: gameInfo,
@@ -147,7 +148,7 @@ async function upsertGame(tx: Tx, game: CreateGameInput['game']) {
     });
 }
 
-async function syncGenres(tx: Tx, steamAppid: number, next: string[]) {
+async function syncGenres(tx: Tx, steamAppid: number, incomingIds: string[]) {
   const current: { genreId: string }[] = await tx
     .select({ genreId: gameGenres.genreId })
     .from(gameGenres)
@@ -155,8 +156,11 @@ async function syncGenres(tx: Tx, steamAppid: number, next: string[]) {
 
   const currentIds = current.map((g) => g.genreId);
 
-  const toAdd = next.filter((id) => !currentIds.includes(id));
-  const toRemove = currentIds.filter((id) => !next.includes(id));
+  const currentSet = new Set(currentIds);
+  const incomingSet = new Set(incomingIds);
+
+  const toAdd = incomingIds.filter((id) => !currentSet.has(id));
+  const toRemove = currentIds.filter((id) => !incomingSet.has(id));
 
   if (toRemove.length) {
     await tx
@@ -169,7 +173,7 @@ async function syncGenres(tx: Tx, steamAppid: number, next: string[]) {
   }
 }
 
-async function syncCategories(tx: Tx, steamAppid: number, next: string[]) {
+async function syncCategories(tx: Tx, steamAppid: number, incomingIds: string[]) {
   const current: { categoryId: string }[] = await tx
     .select({ categoryId: gameCategories.categoryId })
     .from(gameCategories)
@@ -177,8 +181,11 @@ async function syncCategories(tx: Tx, steamAppid: number, next: string[]) {
 
   const currentIds = current.map((c) => c.categoryId);
 
-  const toAdd = next.filter((id) => !currentIds.includes(id));
-  const toRemove = currentIds.filter((id) => !next.includes(id));
+  const currentSet = new Set(currentIds);
+  const incomingSet = new Set(incomingIds);
+
+  const toAdd = incomingIds.filter((id) => !currentSet.has(id));
+  const toRemove = currentIds.filter((id) => !incomingSet.has(id));
 
   if (toRemove.length) {
     await tx

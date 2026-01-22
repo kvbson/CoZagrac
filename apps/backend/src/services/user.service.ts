@@ -1,6 +1,6 @@
 import { db } from '@/db/init.js';
 import { users } from '@/drizzle/schema.js';
-import { CreateUserInput, publicUserSchema, UpdateUserBody } from '@/schemas/user.http.js';
+import { CreateUserInput, publicUserSchema, UpdateUserBody } from '@/schemas/user.zod.js';
 import { eq } from 'drizzle-orm';
 
 export const userService = {
