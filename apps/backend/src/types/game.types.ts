@@ -1,5 +1,5 @@
-import { gameMovies, gamePublishers, gameScreenshots } from '@/drizzle/schema.js';
-import { CreateGameInput } from '@/schemas/game.zod.js';
+import { gameMovies, gamePublishers, gameScreenshots } from '@api/drizzle/schema.js';
+import { CreateGameInput } from '@api/schemas/game.zod.js';
 
 export type GamePayload = {
   game: CreateGameInput;

@@ -1,4 +1,4 @@
-import steamHttp from '@/clients/steam/steam.client.js';
+import steamHttp from '@api/clients/steam/steam.client.js';
 
 type GetOwnedGamesResponse = {
   response: {

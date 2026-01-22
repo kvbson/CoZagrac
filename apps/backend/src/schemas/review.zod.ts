@@ -1,5 +1,5 @@
-import { gameReviews } from '@/drizzle/schema.js';
-import { createUserHttpSchema } from '@/schemas/user.zod.js';
+import { gameReviews } from '@api/drizzle/schema.js';
+import { createUserHttpSchema } from '@api/schemas/user.zod.js';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 

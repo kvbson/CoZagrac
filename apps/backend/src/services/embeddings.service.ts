@@ -1,5 +1,5 @@
-import { db } from '@/db/init.js';
-import { gameEmbeddings, userEmbeddings } from '@/drizzle/schema.js';
+import { db } from '@api/db/init.js';
+import { gameEmbeddings, userEmbeddings } from '@api/drizzle/schema.js';
 import { desc, eq, sql } from 'drizzle-orm';
 
 export const embeddingService = {

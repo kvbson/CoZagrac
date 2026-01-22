@@ -1,4 +1,4 @@
-import { gameInfo } from '@/drizzle/schema.js';
+import { gameInfo } from '@api/drizzle/schema.js';
 import { createInsertSchema } from 'drizzle-zod';
 import z from 'zod';
 

@@ -1,4 +1,4 @@
-import { db } from '@/db/init.js';
+import { db } from '@api/db/init.js';
 import {
   categories,
   gameCategories,
@@ -8,10 +8,10 @@ import {
   gamePublishers,
   gameScreenshots,
   genres,
-} from '@/drizzle/schema.js';
-import { CreateGameInput } from '@/schemas/game.zod.js';
-import { Tx } from '@/types/db.types.js';
-import { GameInfoResult, GamePayload } from '@/types/game.types.js';
+} from '@api/drizzle/schema.js';
+import { CreateGameInput } from '@api/schemas/game.zod.js';
+import { Tx } from '@api/types/db.types.js';
+import { GameInfoResult, GamePayload } from '@api/types/game.types.js';
 import { and, eq, inArray } from 'drizzle-orm';
 
 export const gameService = {

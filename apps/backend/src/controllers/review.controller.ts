@@ -1,5 +1,5 @@
-import { getGameReviewsHttpSchema } from '@/schemas/review.zod.js';
-import { reviewService } from '@/services/review.service.js';
+import { getGameReviewsHttpSchema } from '@api/schemas/review.zod.js';
+import { reviewService } from '@api/services/review.service.js';
 import { Request, Response } from 'express';
 
 export const getGameReviews = async (req: Request, res: Response) => {
