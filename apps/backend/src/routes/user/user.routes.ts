@@ -5,7 +5,7 @@ import {
   deleteUserHttpSchema,
   getUserQueryHttpSchema,
   updateUserHttpSchema,
-} from '@api/schemas/user.http.js';
+} from '@api/schemas/user.zod.js';
 import { Router } from 'express';
 
 const router = Router();

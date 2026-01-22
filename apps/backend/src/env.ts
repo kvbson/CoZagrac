@@ -9,6 +9,7 @@ dotenv.config({
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.string().min(4),
+  STEAM_API_KEY: z.string().min(1),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
 });
 

@@ -1,7 +1,7 @@
 import { db } from '@api/db/init.js';
 import { users } from '@api/drizzle/schema.js';
-import { CreateUserInput, publicUserSchema, UpdateUserBody } from '@api/schemas/user.http.js';
 import { eq } from 'drizzle-orm';
+import { CreateUserInput, publicUserSchema, UpdateUserBody } from '@api/schemas/user.zod.js';
 
 export const userService = {
   async create(data: CreateUserInput) {

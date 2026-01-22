@@ -4,7 +4,7 @@ import {
   GetUserQuery,
   UpdateUserBody,
   UpdateUserParams,
-} from '@api/schemas/user.http.js';
+} from '@api/schemas/user.zod.js';
 import { userService } from '@api/services/user.service.js';
 import { Request, Response } from 'express';
 
@@ -33,7 +33,7 @@ export const deleteUser = async (req: Request<DeleteUserParams>, res: Response) 
     return res.sendStatus(404);
   }
 
-  res.sendStatus(204);
+  res.sendStatus(200);
 };
 
 export const getUser = async (
@@ -52,5 +52,5 @@ export const getUser = async (
     return res.sendStatus(404);
   }
 
-  res.json(user);
+  res.status(200).json(user);
 };

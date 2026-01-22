@@ -1,5 +1,6 @@
 import { pool } from '@api/db/init.js';
 import { checkDbConnection } from '@api/db/utils/healthCheck.js';
+import mainRouter from '@api/routes/index.js';
 import '@api/env';
 import express from 'express';
 import helmet from 'helmet';
@@ -19,13 +20,12 @@ app.use(
   }),
 );
 
+// Routes
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-const onSuccess = () => {
-  console.log('Backend running on http://localhost:3001');
-};
+app.use(mainRouter);
 
 // Start server
 async function startServer() {
@@ -64,6 +64,10 @@ async function startServer() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }
+
+const onSuccess = () => {
+  console.log('Backend running on http://localhost:3001');
+};
 
 startServer().catch((err) => {
   console.error('Failed to start server:', err);
