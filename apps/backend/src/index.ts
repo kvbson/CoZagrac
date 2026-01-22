@@ -1,6 +1,6 @@
-import { pool } from '@/db/init.js';
-import { checkDbConnection } from '@/db/utils/healthCheck.js';
-import '@/env';
+import { pool } from '@api/db/init.js';
+import { checkDbConnection } from '@api/db/utils/healthCheck.js';
+import '@api/env';
 import express from 'express';
 import helmet from 'helmet';
 

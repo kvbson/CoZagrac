@@ -1,11 +1,11 @@
-import { createUser, deleteUser, getUser, updateUser } from '@/controllers/users.controller.js';
-import { validate } from '@/middlewares/validate.js';
+import { createUser, deleteUser, getUser, updateUser } from '@api/controllers/users.controller.js';
+import { validate } from '@api/middlewares/validate.js';
 import {
   createUserHttpSchema,
   deleteUserHttpSchema,
   getUserQueryHttpSchema,
   updateUserHttpSchema,
-} from '@/schemas/user.http.js';
+} from '@api/schemas/user.http.js';
 import { Router } from 'express';
 
 const router = Router();

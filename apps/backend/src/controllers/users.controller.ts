@@ -4,8 +4,8 @@ import {
   GetUserQuery,
   UpdateUserBody,
   UpdateUserParams,
-} from '@/schemas/user.http.js';
-import { userService } from '@/services/user.service.js';
+} from '@api/schemas/user.http.js';
+import { userService } from '@api/services/user.service.js';
 import { Request, Response } from 'express';
 
 export const createUser = async (req: Request<object, object, CreateUserInput>, res: Response) => {

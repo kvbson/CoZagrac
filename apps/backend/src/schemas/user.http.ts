@@ -1,4 +1,4 @@
-import { users } from '@/drizzle/schema.js';
+import { users } from '@api/drizzle/schema.js';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
