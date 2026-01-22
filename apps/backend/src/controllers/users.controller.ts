@@ -33,7 +33,7 @@ export const deleteUser = async (req: Request<DeleteUserParams>, res: Response) 
     return res.sendStatus(404);
   }
 
-  res.sendStatus(204);
+  res.sendStatus(200);
 };
 
 export const getUser = async (
@@ -52,5 +52,5 @@ export const getUser = async (
     return res.sendStatus(404);
   }
 
-  res.json(user);
+  res.status(200).json(user);
 };

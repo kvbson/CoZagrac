@@ -257,8 +257,13 @@ CREATE INDEX idx_sessions_expire ON sessions (expire);
 -- =========================
 -- REVIEWS INDEXES
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_reviews_steam_appid
-  ON game_reviews (steam_appid);
+-- newest first
+CREATE INDEX idx_reviews_appid_created
+ON game_reviews (steam_appid, review_created DESC);
+
+-- best first
+CREATE INDEX idx_reviews_appid_weighted
+ON game_reviews (steam_appid, weighted_vote_score DESC);
 
 -- =========================
 -- GENRES INDEXES
@@ -293,11 +298,11 @@ CREATE INDEX IF NOT EXISTS idx_game_publishers_steam_appid
 -- =========================
 -- GAME EMBEDDINGS
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_embeddings_steam_appid
-  ON game_embeddings (steam_appid);
+CREATE INDEX IF NOT EXISTS idx_game_embeddings_appid_created
+ON game_embeddings (steam_appid, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_user_embeddings_user_id
-  ON user_embeddings (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_embeddings_user_created
+ON user_embeddings (user_id, created_at DESC);
 
 -- =========================
 -- USER PREFERENCES INDEXES

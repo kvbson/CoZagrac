@@ -13,7 +13,7 @@ export const createUserHttpSchema = z.object({
       passwordHash: true,
     })
     .refine((data) => data.email || data.passwordHash, {
-      message: 'Password and email are required.',
+      error: 'Password and email are required.',
     }),
 });
 
@@ -28,7 +28,7 @@ const updateUserBodySchema = createInsertSchema(users)
     passwordHash: true,
   })
   .refine((data) => data.email || data.passwordHash || data.steamId, {
-    message: 'At least one info must be passed to update',
+    error: 'At least one info must be passed to update',
   });
 
 export const updateUserHttpSchema = z.object({
@@ -50,7 +50,7 @@ export const getUserQueryHttpSchema = z
     steamId: z.string().optional(),
   })
   .refine((q) => [q.id, q.email, q.steamId].filter(Boolean).length === 1, {
-    message: 'Provide exactly one of: id, email, steamId',
+    error: 'Provide exactly one of: id, email, steamId',
   });
 
 export type GetUserQuery = z.infer<typeof getUserQueryHttpSchema>;
@@ -62,7 +62,7 @@ export const deleteUserHttpSchema = z
       id: z.uuid(),
     }),
   })
-  .refine((data) => data.params.id, { message: 'User id is required for deleting.' });
+  .refine((data) => data.params.id, { error: 'User id is required for deleting.' });
 
 export type DeleteUserParams = z.infer<typeof deleteUserHttpSchema>['params'];
 
