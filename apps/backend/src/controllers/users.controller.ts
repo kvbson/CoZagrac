@@ -1,12 +1,12 @@
+import { Request, Response } from 'express';
 import {
   CreateUserInput,
+  UpdateUserParams,
+  UpdateUserBody,
   DeleteUserParams,
   GetUserQuery,
-  UpdateUserBody,
-  UpdateUserParams,
-} from '@api/schemas/user.zod.js';
-import { userService } from '@api/services/user.service.js';
-import { Request, Response } from 'express';
+} from '../schemas/user.zod.js';
+import { userService } from '../services/user.service.js';
 
 export const createUser = async (req: Request<object, object, CreateUserInput>, res: Response) => {
   const user = await userService.create(req.body);

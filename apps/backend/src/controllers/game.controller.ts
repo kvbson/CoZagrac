@@ -1,6 +1,6 @@
-import { getGameInfoByAppIdHttpSchema } from '@api/schemas/game.zod.js';
-import { gameService } from '@api/services/game.service.js';
 import { Request, Response } from 'express';
+import { getGameInfoByAppIdHttpSchema } from '../schemas/game.zod.js';
+import { gameService } from '../services/game.service.js';
 
 export const getGameInfoByAppId = async (req: Request, res: Response) => {
   const { query } = getGameInfoByAppIdHttpSchema.parse(req);

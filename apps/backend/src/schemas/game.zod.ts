@@ -1,14 +1,18 @@
-import { gameInfo } from '@api/drizzle/schema.js';
 import { createInsertSchema } from 'drizzle-zod';
 import z from 'zod';
+import { gameInfo } from '../drizzle/schema.js';
 
 const insertGameSchema = createInsertSchema(gameInfo).refine((data) => data.steamAppid, {
   error: 'App id is required',
 });
 
-const genresSchema = z.array(z.uuid()).default([]);
+const steamIdSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+});
 
-const categoriesSchema = z.array(z.uuid()).default([]);
+const genresSchema = z.array(steamIdSchema).default([]);
+const categoriesSchema = z.array(steamIdSchema).default([]);
 
 const publishersSchema = z
   .array(

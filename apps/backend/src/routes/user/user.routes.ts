@@ -1,12 +1,12 @@
-import { createUser, deleteUser, getUser, updateUser } from '@api/controllers/users.controller.js';
-import { validate } from '@api/middlewares/validate.js';
+import { Router } from 'express';
+import { createUser, getUser, updateUser, deleteUser } from '../../controllers/users.controller.js';
 import {
   createUserHttpSchema,
-  deleteUserHttpSchema,
   getUserQueryHttpSchema,
   updateUserHttpSchema,
-} from '@api/schemas/user.zod.js';
-import { Router } from 'express';
+  deleteUserHttpSchema,
+} from '../../schemas/user.zod.js';
+import { validate } from '../../utils/validate.js';
 
 const router = Router();
 

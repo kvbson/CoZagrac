@@ -1,6 +1,6 @@
-import { users } from '@api/drizzle/schema.js';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { users } from '../drizzle/schema.js';
 
 // insert
 const insertUserSchema = createInsertSchema(users);

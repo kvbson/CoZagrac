@@ -11,10 +11,11 @@ import {
   jsonb,
   text,
   boolean,
-  date,
   primaryKey,
   doublePrecision,
+  date,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const genres = pgTable(
   'genres',
@@ -23,7 +24,10 @@ export const genres = pgTable(
     steamGenreId: integer('steam_genre_id'),
     name: varchar(),
   },
-  (table) => [unique('genres_name_key').on(table.name)],
+  (table) => [
+    unique('uq_genres_steam_genre_id').on(table.steamGenreId),
+    unique('genres_name_key').on(table.name),
+  ],
 );
 
 export const categories = pgTable(
@@ -33,7 +37,10 @@ export const categories = pgTable(
     steamCategoryId: integer('steam_category_id'),
     name: varchar(),
   },
-  (table) => [unique('categories_name_key').on(table.name)],
+  (table) => [
+    unique('uq_categories_steam_category_id').on(table.steamCategoryId),
+    unique('categories_name_key').on(table.name),
+  ],
 );
 
 export const gameEmbeddings = pgTable(
@@ -107,7 +114,10 @@ export const tags = pgTable(
     steamTagId: integer('steam_tag_id'),
     name: varchar(),
   },
-  (table) => [unique('tags_name_key').on(table.name)],
+  (table) => [
+    unique('uq_tags_steam_tag_id').on(table.steamTagId),
+    unique('tags_name_key').on(table.name),
+  ],
 );
 
 export const sessions = pgTable(
@@ -150,13 +160,13 @@ export const gameInfo = pgTable(
     website: varchar(),
     appUrl: varchar('app_url'),
     releaseComingSoon: boolean('release_coming_soon'),
-    releaseDate: date('release_date'),
+    releaseDate: text('release_date'),
     priceCurrency: varchar('price_currency'),
     priceInitial: integer('price_initial'),
     priceFinal: integer('price_final'),
     priceInitialFormatted: varchar('price_initial_formatted'),
     priceFinalFormatted: varchar('price_final_formatted'),
-    priceDiscountPercent: varchar('price_discount_percent'),
+    priceDiscountPercent: integer('price_discount_percent'),
     pcMinimum: text('pc_minimum'),
     pcRecommended: text('pc_recommended'),
     macMinimum: text('mac_minimum'),
@@ -165,12 +175,18 @@ export const gameInfo = pgTable(
     linuxRecommended: text('linux_recommended'),
     // TODO: failed to parse database type 'tsvector'
     searchVector: text('search_vector'),
+    isCandidate: boolean('is_candidate'),
+    reviewTier: varchar('review_tier', { length: 1 }),
   },
   (table) => [
+    index('idx_game_info_is_candidate').using(
+      'btree',
+      table.isCandidate.asc().nullsLast().op('bool_ops'),
+    ),
     index('idx_game_info_is_free').using('btree', table.isFree.asc().nullsLast().op('bool_ops')),
     index('idx_game_info_release_date').using(
       'btree',
-      table.releaseDate.asc().nullsLast().op('date_ops'),
+      table.releaseDate.asc().nullsLast().op('text_ops'),
     ),
     index('idx_game_info_search_vector').using(
       'gin',
@@ -216,35 +232,6 @@ export const gameGenres = pgTable(
       name: 'game_genres_genre_id_fkey',
     }).onDelete('cascade'),
     primaryKey({ columns: [table.steamAppid, table.genreId], name: 'game_genres_pkey' }),
-  ],
-);
-
-export const gameCategories = pgTable(
-  'game_categories',
-  {
-    steamAppid: integer('steam_appid').notNull(),
-    categoryId: uuid('category_id').notNull(),
-  },
-  (table) => [
-    index('idx_game_categories_category_id').using(
-      'btree',
-      table.categoryId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_game_categories_steam_appid').using(
-      'btree',
-      table.steamAppid.asc().nullsLast().op('int4_ops'),
-    ),
-    foreignKey({
-      columns: [table.steamAppid],
-      foreignColumns: [gameInfo.steamAppid],
-      name: 'game_categories_steam_appid_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.categoryId],
-      foreignColumns: [categories.id],
-      name: 'game_categories_category_id_fkey',
-    }).onDelete('cascade'),
-    primaryKey({ columns: [table.steamAppid, table.categoryId], name: 'game_categories_pkey' }),
   ],
 );
 
@@ -314,6 +301,35 @@ export const userTags = pgTable(
       name: 'user_tags_tag_id_fkey',
     }).onDelete('cascade'),
     primaryKey({ columns: [table.userId, table.tagId], name: 'user_tags_pkey' }),
+  ],
+);
+
+export const gameCategories = pgTable(
+  'game_categories',
+  {
+    steamAppid: integer('steam_appid').notNull(),
+    categoryId: uuid('category_id').notNull(),
+  },
+  (table) => [
+    index('idx_game_categories_category_id').using(
+      'btree',
+      table.categoryId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_game_categories_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'game_categories_steam_appid_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.categoryId],
+      foreignColumns: [categories.id],
+      name: 'game_categories_category_id_fkey',
+    }).onDelete('cascade'),
+    primaryKey({ columns: [table.steamAppid, table.categoryId], name: 'game_categories_pkey' }),
   ],
 );
 

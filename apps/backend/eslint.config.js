@@ -8,11 +8,7 @@ export default defineConfig([
   globalIgnores(['dist', 'node_modules']),
   {
     files: ['**/*.{ts,js}'],
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-      prettier,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, prettier],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -20,6 +16,7 @@ export default defineConfig([
     },
     rules: {
       'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ]);

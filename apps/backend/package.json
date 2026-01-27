@@ -9,8 +9,8 @@
     "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "start": "node dist/src/index.js",
     "typecheck": "tsc --noEmit --watch",
-    "schema_gen": "npx drizzle-kit introspect",
-    "sql_gen": "npx drizzle-kit generate"
+    "schema_gen": "npx drizzle-kit introspect --config ./src/drizzle.config.ts",
+    "sql_gen": "npx drizzle-kit generate --config ./src/drizzle.config.ts"
   },
   "keywords": [],
   "author": "",

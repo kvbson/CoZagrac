@@ -1,10 +1,15 @@
-import '@api/env.js';
+import dotenv from 'dotenv';
 import type { Config } from 'drizzle-kit';
+import path from 'path';
+
+dotenv.config({
+  path: path.resolve(process.cwd(), '../../.env'),
+});
 
 export default {
+  schema: path.resolve('./src/drizzle/schema.ts'),
+  out: path.resolve('./src/drizzle'),
   dialect: 'postgresql',
-  schema: './drizzle/schema.ts',
-  out: './drizzle',
   casing: 'camelCase',
   dbCredentials: {
     url: process.env.DATABASE_URL!,

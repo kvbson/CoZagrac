@@ -1,4 +1,4 @@
-import { createApiClient } from '@api/clients/factory.js';
+import { createApiClient } from '../factory.js';
 
 const steamHttp = createApiClient('https://api.steampowered.com/');
 

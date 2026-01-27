@@ -1,4 +1,4 @@
-import * as schema from '@api/drizzle/schema.js';
+import * as schema from '../drizzle/schema.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 

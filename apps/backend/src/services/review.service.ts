@@ -1,9 +1,9 @@
-import { db } from '@api/db/init.js';
-import { gameReviews } from '@api/drizzle/schema.js';
-import { Tx } from '@api/types/db.types.js';
-import { GamePayload } from '@api/types/game.types.js';
 import { desc, eq, sql } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import { db } from '../db/init.js';
+import { gameReviews } from '../drizzle/schema.js';
+import { Tx } from '../types/db.types.js';
+import { GamePayload } from '../types/game.types.js';
 
 export const reviewService = {
   async syncForGame(steamAppid: number, reviews: GamePayload['reviews']) {

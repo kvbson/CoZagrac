@@ -46,14 +46,14 @@ CREATE TABLE IF NOT EXISTS game_info (
   app_url varchar,
 
   release_coming_soon boolean,
-  release_date date,
+  release_date text,
 
   price_currency varchar,
   price_initial integer,
   price_final integer,
   price_initial_formatted varchar,
   price_final_formatted varchar,
-  price_discount_percent varchar,
+  price_discount_percent integer,
 
   pc_minimum text,
   pc_recommended text,
@@ -89,20 +89,20 @@ CREATE TABLE IF NOT EXISTS game_reviews (
 -- =========================
 CREATE TABLE IF NOT EXISTS genres (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_genre_id integer,
-  name varchar UNIQUE
+  steam_genre_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_category_id integer,
-  name varchar UNIQUE
+  steam_category_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_tag_id integer,
-  name varchar UNIQUE
+  steam_tag_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 -- =========================
@@ -319,7 +319,7 @@ CREATE INDEX IF NOT EXISTS idx_user_tags_user_id
 -- =========================
 -- GAME INFO INDEXES
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_info_release_date
+CREATE INDEX IF NOT EXISTS idx_game_info_release_date_text
   ON game_info (release_date);
 
 CREATE INDEX IF NOT EXISTS idx_game_info_is_free

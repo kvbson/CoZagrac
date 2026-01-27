@@ -1,7 +1,7 @@
-import { gameReviews } from '@api/drizzle/schema.js';
-import { createUserHttpSchema } from '@api/schemas/user.zod.js';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { gameReviews } from '../drizzle/schema.js';
+import { createUserHttpSchema } from './user.zod.js';
 
 // insert
 const insertReviewSchema = createInsertSchema(gameReviews).refine((data) => data.steamAppid, {

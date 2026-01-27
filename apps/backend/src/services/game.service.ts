@@ -1,30 +1,41 @@
-import { db } from '@api/db/init.js';
+import { eq, inArray } from 'drizzle-orm';
+import { db } from '../db/init.js';
 import {
-  categories,
-  gameCategories,
-  gameGenres,
   gameInfo,
+  genres,
+  categories,
   gameMovies,
   gamePublishers,
   gameScreenshots,
-  genres,
-} from '@api/drizzle/schema.js';
-import { CreateGameInput } from '@api/schemas/game.zod.js';
-import { Tx } from '@api/types/db.types.js';
-import { GameInfoResult, GamePayload } from '@api/types/game.types.js';
-import { and, eq, inArray } from 'drizzle-orm';
+  gameGenres,
+  gameCategories,
+} from '../drizzle/schema.js';
+import { CreateGameInput } from '../schemas/game.zod.js';
+import { Tx } from '../types/db.types.js';
+import { GameInfoResult, GamePayload } from '../types/game.types.js';
 
 export const gameService = {
   /**
-   * Sync one game (Steam = source of truth)
+   * Sync one game
    */
   async sync(payload: CreateGameInput) {
     const steamAppid = payload.game.steamAppid;
     await db.transaction(async (tx) => {
       await upsertGame(tx, payload.game);
 
-      await syncGenres(tx, steamAppid, payload.genres);
-      await syncCategories(tx, steamAppid, payload.categories);
+      await upsertGenres(tx, payload.genres);
+      await upsertCategories(tx, payload.categories);
+
+      await syncGenres(
+        tx,
+        steamAppid,
+        payload.genres.map((g) => g.id),
+      );
+      await syncCategories(
+        tx,
+        steamAppid,
+        payload.categories.map((c) => c.id),
+      );
 
       await replacePublishers(tx, steamAppid, payload.publishers);
       await replaceMovies(tx, steamAppid, payload.movies);
@@ -142,65 +153,92 @@ async function upsertGame(tx: Tx, game: CreateGameInput['game']) {
         priceInitial: game.priceInitial,
         priceInitialFormatted: game.priceInitialFormatted,
         releaseComingSoon: game.releaseComingSoon,
+        reviewTier: game.reviewTier,
         requiredAge: game.requiredAge,
         website: game.website,
       },
     });
 }
 
-async function syncGenres(tx: Tx, steamAppid: number, incomingIds: string[]) {
-  const current: { genreId: string }[] = await tx
-    .select({ genreId: gameGenres.genreId })
-    .from(gameGenres)
-    .where(eq(gameGenres.steamAppid, steamAppid));
+async function upsertGenres(tx: Tx, incoming: { id: string; description: string }[]) {
+  if (!incoming.length) return;
 
-  const currentIds = current.map((g) => g.genreId);
-
-  const currentSet = new Set(currentIds);
-  const incomingSet = new Set(incomingIds);
-
-  const toAdd = incomingIds.filter((id) => !currentSet.has(id));
-  const toRemove = currentIds.filter((id) => !incomingSet.has(id));
-
-  if (toRemove.length) {
-    await tx
-      .delete(gameGenres)
-      .where(and(eq(gameGenres.steamAppid, steamAppid), inArray(gameGenres.genreId, toRemove)));
-  }
-
-  if (toAdd.length) {
-    await tx.insert(gameGenres).values(toAdd.map((genreId) => ({ steamAppid, genreId })));
-  }
+  await tx
+    .insert(genres)
+    .values(
+      incoming.map((g) => ({
+        steamGenreId: Number(g.id),
+        name: g.description,
+      })),
+    )
+    .onConflictDoNothing();
 }
 
-async function syncCategories(tx: Tx, steamAppid: number, incomingIds: string[]) {
-  const current: { categoryId: string }[] = await tx
-    .select({ categoryId: gameCategories.categoryId })
-    .from(gameCategories)
-    .where(eq(gameCategories.steamAppid, steamAppid));
+async function upsertCategories(tx: Tx, incoming: { id: string; description: string }[]) {
+  if (!incoming.length) return;
 
-  const currentIds = current.map((c) => c.categoryId);
+  await tx
+    .insert(categories)
+    .values(
+      incoming.map((c) => ({
+        steamCategoryId: Number(c.id),
+        name: c.description,
+      })),
+    )
+    .onConflictDoNothing();
+}
 
-  const currentSet = new Set(currentIds);
-  const incomingSet = new Set(incomingIds);
-
-  const toAdd = incomingIds.filter((id) => !currentSet.has(id));
-  const toRemove = currentIds.filter((id) => !incomingSet.has(id));
-
-  if (toRemove.length) {
-    await tx
-      .delete(gameCategories)
-      .where(
-        and(
-          eq(gameCategories.steamAppid, steamAppid),
-          inArray(gameCategories.categoryId, toRemove),
-        ),
-      );
+async function syncGenres(tx: Tx, steamAppid: number, incomingSteamIds: string[]) {
+  if (!incomingSteamIds.length) {
+    await tx.delete(gameGenres).where(eq(gameGenres.steamAppid, steamAppid));
+    return;
   }
 
-  if (toAdd.length) {
-    await tx.insert(gameCategories).values(toAdd.map((categoryId) => ({ steamAppid, categoryId })));
+  const steamIds = incomingSteamIds.map(Number);
+
+  const genreRows = await tx
+    .select({ id: genres.id })
+    .from(genres)
+    .where(inArray(genres.steamGenreId, steamIds));
+
+  if (!genreRows.length) return;
+
+  await tx.delete(gameGenres).where(eq(gameGenres.steamAppid, steamAppid));
+
+  await tx.insert(gameGenres).values(
+    genreRows.map((g) => ({
+      steamAppid,
+      genreId: g.id,
+    })),
+  );
+}
+
+async function syncCategories(tx: Tx, steamAppid: number, incomingSteamIds: string[]) {
+  if (!incomingSteamIds.length) {
+    await tx.delete(gameCategories).where(eq(gameCategories.steamAppid, steamAppid));
+    return;
   }
+
+  const steamIds = incomingSteamIds.map(Number);
+
+  const categoryRows = await tx
+    .select({ id: categories.id })
+    .from(categories)
+    .where(inArray(categories.steamCategoryId, steamIds));
+
+  if (!categoryRows.length) {
+    await tx.delete(gameCategories).where(eq(gameCategories.steamAppid, steamAppid));
+    return;
+  }
+
+  await tx.delete(gameCategories).where(eq(gameCategories.steamAppid, steamAppid));
+
+  await tx.insert(gameCategories).values(
+    categoryRows.map((c) => ({
+      steamAppid,
+      categoryId: c.id, // UUID ✅
+    })),
+  );
 }
 
 async function replacePublishers(

@@ -1,135 +1,7 @@
+import { getReviewTier, recommendationsThresholds } from '../../../../functions/getReviewTier.js';
+import { CreateGameInput } from '../../../../schemas/game.zod.js';
+import { GetAppDetailsResponse } from '../../../../types/response.js';
 import steamStoreHttp from '../../steamStore.client.js';
-
-type GetAppDetailsResponse = Record<
-  string,
-  {
-    success: boolean;
-    data: {
-      type: string;
-      name: string;
-      steam_appid: number;
-      required_age: string;
-      is_free: boolean;
-      controller_support: string;
-      detailed_description: string;
-      about_the_game: string;
-      short_description: string;
-      supported_languages: string;
-      header_image: string;
-      capsule_image: string;
-      capsule_imagev5: string;
-      website: string;
-      pc_requirements: {
-        minimum: string;
-        recommended: string;
-      };
-      mac_requirements: {
-        minimum: string;
-        recommended: string;
-      };
-      linux_requirements: {
-        minimum: string;
-        recommended: string;
-      };
-      developers: string[];
-      publishers: string[];
-      price_overview?: {
-        currency: string;
-        initial: number;
-        final: number;
-        discount_percent: number;
-        initial_formatted: string;
-        final_formatted: string;
-      };
-      packages: number[];
-      package_groups: Array<{
-        name: string;
-        title: string;
-        description: string;
-        selection_text: string;
-        save_text: string;
-        display_type: number;
-        is_recurring_subscription: string;
-        subs: Array<{
-          packageid: number;
-          percent_savings_text: string;
-          percent_savings: number;
-          option_text: string;
-          option_description: string;
-          can_get_free_license: string;
-          is_free_license: string;
-          price_in_cents_with_discount: number;
-        }>;
-      }>;
-      platforms: {
-        windows: boolean;
-        mac: boolean;
-        linux: boolean;
-      };
-      metacritic?: {
-        score: number;
-        url: string;
-      };
-      categories: Array<{
-        id: number;
-        description: string;
-      }>;
-      genres: Array<{
-        id: string;
-        description: string;
-      }>;
-      screenshots: Array<{
-        id: number;
-        path_thumbnail: string;
-        path_full: string;
-      }>;
-      movies: Array<{
-        id: number;
-        name: string;
-        thumbnail: string;
-        dash_av1: string;
-        dash_h264: string;
-        hls_h264: string;
-        highlight: boolean;
-      }>;
-      recommendations: {
-        total: number;
-      };
-      achievements?: {
-        total: number;
-        highlighted: Array<{
-          name: string;
-          path: string;
-        }>;
-      };
-      release_date: {
-        coming_soon: boolean;
-        date: string;
-      };
-      support_info: {
-        url: string;
-        email: string;
-      };
-      background: string;
-      content_descriptors: {
-        ids: number[];
-        notes: string;
-      };
-      ratings: Record<
-        string,
-        {
-          rating?: string;
-          use_age_gate?: string;
-          required_age?: string;
-          banned?: string;
-          rating_generated?: string;
-          rating_updated?: string;
-          descriptors?: string;
-        }
-      >;
-    };
-  }
->;
 
 type AppDetailsEndpointParams = {
   appids: string;
@@ -144,3 +16,80 @@ export const appDetailsEndpoint = {
     });
   },
 };
+
+export function mapAppDetailsToCreateGameInput(res: GetAppDetailsResponse): CreateGameInput {
+  const appid = parseInt(Object.keys(res)[0], 10);
+  const data = res[appid].data;
+  if (!data) {
+    throw new Error(`No data found for appid ${appid}`);
+  }
+  if (!appid) {
+    throw new Error(`No appid found in response`);
+  }
+  const recommendationsCount = data.recommendations?.total || 0;
+  if (!recommendationsCount || recommendationsCount < recommendationsThresholds.B) {
+    throw new Error(`Insufficient recommendations (${recommendationsCount}) for appid ${appid}`);
+  }
+  const reviewTier = getReviewTier(recommendationsCount);
+  return {
+    game: {
+      steamAppid: appid,
+      name: data.name,
+      shortDescription: data.short_description,
+      detailedDescription: data.detailed_description,
+      aboutTheGame: data.about_the_game,
+
+      headerImage: data.header_image,
+      capsuleImage: data.capsule_image,
+      background: data.background,
+
+      releaseDate: data.release_date?.date || null,
+      releaseComingSoon: data.release_date?.coming_soon ?? false,
+
+      isFree: data.is_free,
+      requiredAge: parseInt(data.required_age, 10) || 0,
+      website: data.website ?? null,
+      appUrl: `https://store.steampowered.com/app/${appid}`,
+
+      priceCurrency: data.price_overview?.currency ?? null,
+      priceInitial: data.price_overview?.initial ?? null,
+      priceFinal: data.price_overview?.final ?? null,
+      priceInitialFormatted: data.price_overview?.initial_formatted ?? null,
+      priceFinalFormatted: data.price_overview?.final_formatted ?? null,
+      priceDiscountPercent: data.price_overview?.discount_percent ?? 0,
+
+      platformWindows: !!data.platforms?.windows,
+      platformLinux: !!data.platforms?.linux,
+      platformMac: !!data.platforms?.mac,
+
+      pcMinimum: data.pc_requirements?.minimum ?? null,
+      pcRecommended: data.pc_requirements?.recommended ?? null,
+      linuxMinimum: data.linux_requirements?.minimum ?? null,
+      linuxRecommended: data.linux_requirements?.recommended ?? null,
+      macMinimum: data.mac_requirements?.minimum ?? null,
+      macRecommended: data.mac_requirements?.recommended ?? null,
+      reviewTier: reviewTier,
+    },
+
+    genres: data.genres ?? [],
+    categories: data.categories ?? [],
+
+    publishers: (data.publishers ?? []).map((name: string, idx: number) => ({
+      publisherId: idx,
+      name,
+    })),
+
+    movies: (data.movies ?? []).map((m: any) => ({
+      movieId: m.id,
+      name: m.name,
+      url: m.webm?.max ?? m.mp4?.max,
+      thumbnail: m.thumbnail,
+    })),
+
+    screenshots: (data.screenshots ?? []).map((s: any) => ({
+      screenshotId: s.id,
+      pathFull: s.path_full,
+      pathThumbnail: s.path_thumbnail,
+    })),
+  };
+}

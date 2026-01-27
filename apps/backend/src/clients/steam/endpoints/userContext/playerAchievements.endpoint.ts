@@ -1,4 +1,4 @@
-import steamHttp from '@api/clients/steam/steam.client.js';
+import steamHttp from '../../steam.client.js';
 
 type GetPlayerAchievementsResponse = {
   playerstats: {

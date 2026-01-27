@@ -1,7 +1,7 @@
-import { getGameReviews } from '@api/controllers/review.controller.js';
-import { validate } from '@api/middlewares/validate.js';
-import { getGameReviewsHttpSchema } from '@api/schemas/review.zod.js';
 import { Router } from 'express';
+import { getGameReviews } from '../../controllers/review.controller.js';
+import { getGameReviewsHttpSchema } from '../../schemas/review.zod.js';
+import { validate } from '../../utils/validate.js';
 
 const router = Router();
 
