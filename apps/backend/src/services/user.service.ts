@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db } from '../db/init.js';
-import { users } from '../drizzle/schema.js';
+import { userEmbeddings, users } from '../drizzle/schema.js';
 import { CreateUserInput, publicUserSchema, UpdateUserBody } from '../schemas/user.zod.js';
 
 export const userService = {
@@ -47,5 +47,14 @@ export const userService = {
       .from(users)
       .where(eq(users.steamId, steamId));
     return { userId };
+  },
+
+  async getUserEmbeddings(userId: string) {
+    const [{ embedding }] = await db
+      .select({ embedding: userEmbeddings.embedding })
+      .from(userEmbeddings)
+      .where(eq(userEmbeddings.userId, userId))
+      .orderBy(desc(userEmbeddings.createdAt));
+    return { embedding };
   },
 };

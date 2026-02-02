@@ -14,6 +14,7 @@ import {
   primaryKey,
   doublePrecision,
   date,
+  pgView,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -409,14 +410,27 @@ export const gameReviews = pgTable(
     votesUp: integer('votes_up'),
     votesFunny: integer('votes_funny'),
     weightedVoteScore: doublePrecision('weighted_vote_score'),
+    playtimeForever: integer('playtime_forever').default(0).notNull(),
     steamPurchase: boolean('steam_purchase'),
     commentCount: integer('comment_count'),
     reviewCreated: date('review_created'),
+    language: varchar({ length: 50 }),
   },
   (table) => [
-    index('idx_game_reviews_steam_appid').using(
+    index('idx_reviews_appid_created').using(
       'btree',
       table.steamAppid.asc().nullsLast().op('int4_ops'),
+      table.reviewCreated.desc().nullsFirst().op('int4_ops'),
+    ),
+    index('idx_reviews_appid_voted_up').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('bool_ops'),
+      table.votedUp.asc().nullsLast().op('bool_ops'),
+    ),
+    index('idx_reviews_appid_weighted').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('float8_ops'),
+      table.weightedVoteScore.desc().nullsFirst().op('int4_ops'),
     ),
     foreignKey({
       columns: [table.steamAppid],
@@ -425,4 +439,10 @@ export const gameReviews = pgTable(
     }).onDelete('cascade'),
     primaryKey({ columns: [table.steamAppid, table.recommendationId], name: 'game_reviews_pkey' }),
   ],
+);
+export const genreNamesForGameView = pgView('genre_names_for_game_view', {
+  steamAppid: integer('steam_appid'),
+  genres: varchar(),
+}).as(
+  sql`SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text`,
 );

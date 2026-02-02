@@ -74,16 +74,16 @@ CREATE TABLE IF NOT EXISTS game_reviews (
   votes_up integer,
   votes_funny integer,
   weighted_vote_score float,
+  playtime_forever integer NOT NULL DEFAULT 0,
   steam_purchase boolean,
   comment_count integer,
   review_created date,
-
+  language varchar(50),
   PRIMARY KEY (steam_appid, recommendation_id),
   FOREIGN KEY (steam_appid)
     REFERENCES game_info (steam_appid)
     ON DELETE CASCADE
 );
-
 -- =========================
 -- TAXONOMY
 -- =========================
@@ -264,6 +264,10 @@ ON game_reviews (steam_appid, review_created DESC);
 -- best first
 CREATE INDEX idx_reviews_appid_weighted
 ON game_reviews (steam_appid, weighted_vote_score DESC);
+
+-- positive / negative
+CREATE INDEX idx_reviews_appid_voted_up
+ON game_reviews (steam_appid, voted_up);
 
 -- =========================
 -- GENRES INDEXES

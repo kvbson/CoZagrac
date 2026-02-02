@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import mainRouter from './routes/index.js';
 import { pool } from './db/init.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
-import { batchSyncCandidatesFromSteam } from './functions/getCanditates.js';
+import { syncReviewsForAllGames } from './functions/syncReviewsForGames.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
@@ -37,7 +37,7 @@ async function startServer() {
   try {
     await checkDbConnection();
     console.log('Database connection successful.');
-    batchSyncCandidatesFromSteam();
+    syncReviewsForAllGames({ startAfterAppId: 3390 });
   } catch (err) {
     console.error('Database connection failed:', err);
     process.exit(1);

@@ -17,9 +17,17 @@ export const logger = {
     write('sync.log', `[INFO] ${new Date().toISOString()} ${msg}`);
   },
 
-  error(msg: string) {
-    console.error(msg);
-    write('error.log', `[ERROR] ${new Date().toISOString()} ${msg}`);
+  debug(msg: string) {
+    console.log(msg);
+    write('debug.log', `[DEBUG] ${new Date().toISOString()} ${msg}`);
+  },
+
+  error(msg: string, err?: unknown) {
+    console.error(msg, err);
+    write(
+      'error.log',
+      `[ERROR] ${new Date().toISOString()} ${msg} ${err instanceof Error ? err.message : String(err)}`,
+    );
   },
 
   failedApp(appid: number, reason?: unknown) {

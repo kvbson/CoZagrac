@@ -23,12 +23,14 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "pg": "^8.17.2",
+    "stream-json": "^1.9.1",
     "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.9",
     "@types/pg": "^8.16.0",
+    "@types/stream-json": "^1.7.8",
     "drizzle-kit": "^0.31.8",
     "nodemon": "^3.1.11",
     "tsconfig-paths": "^4.2.0",

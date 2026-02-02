@@ -1490,6 +1490,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "playtime_forever": {
+          "name": "playtime_forever",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "steam_purchase": {
           "name": "steam_purchase",
           "type": "boolean",
@@ -1507,16 +1514,75 @@
           "type": "date",
           "primaryKey": false,
           "notNull": false
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
-        "idx_game_reviews_steam_appid": {
-          "name": "idx_game_reviews_steam_appid",
+        "idx_reviews_appid_created": {
+          "name": "idx_reviews_appid_created",
           "columns": [
             {
               "expression": "steam_appid",
               "asc": true,
               "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "review_created",
+              "asc": false,
+              "nulls": "first",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_reviews_appid_voted_up": {
+          "name": "idx_reviews_appid_voted_up",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "voted_up",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_reviews_appid_weighted": {
+          "name": "idx_reviews_appid_weighted",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "float8_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "weighted_vote_score",
+              "asc": false,
+              "nulls": "first",
               "opclass": "int4_ops",
               "isExpression": false
             }
@@ -1563,13 +1629,45 @@
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
+  "views": {
+    "public.genre_names_for_game_view": {
+      "name": "genre_names_for_game_view",
+      "schema": "public",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "genres": {
+          "name": "genres",
+          "type": "varchar[]",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "isExisting": false,
+      "definition": "SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text",
+      "materialized": false
+    }
+  },
   "_meta": {
     "schemas": {},
     "tables": {},
     "columns": {}
   },
   "internal": {
-    "tables": {}
+    "tables": {
+      "genre_names_for_game_view": {
+        "columns": {
+          "genres": {
+            "isArray": true,
+            "dimensions": 0,
+            "rawType": "character varying"
+          }
+        }
+      }
+    }
   }
 }

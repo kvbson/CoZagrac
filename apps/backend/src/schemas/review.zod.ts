@@ -1,7 +1,6 @@
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { gameReviews } from '../drizzle/schema.js';
-import { createUserHttpSchema } from './user.zod.js';
 
 // insert
 const insertReviewSchema = createInsertSchema(gameReviews).refine((data) => data.steamAppid, {
@@ -12,7 +11,7 @@ export const createReviewHttpSchema = z.object({
   body: insertReviewSchema,
 });
 
-export type CreateReviewInput = z.infer<typeof createUserHttpSchema>['body'];
+export type CreateReviewInput = z.infer<typeof createReviewHttpSchema>['body'];
 
 export const getGameReviewsHttpSchema = z.object({
   params: z.object({

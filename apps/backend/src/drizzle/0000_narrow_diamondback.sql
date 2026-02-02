@@ -165,9 +165,11 @@ CREATE TABLE "game_reviews" (
 	"votes_up" integer,
 	"votes_funny" integer,
 	"weighted_vote_score" double precision,
+	"playtime_forever" integer DEFAULT 0 NOT NULL,
 	"steam_purchase" boolean,
 	"comment_count" integer,
 	"review_created" date,
+	"language" varchar(50),
 	CONSTRAINT "game_reviews_pkey" PRIMARY KEY("steam_appid","recommendation_id")
 );
 --> statement-breakpoint
@@ -207,5 +209,8 @@ CREATE INDEX "idx_game_categories_steam_appid" ON "game_categories" USING btree 
 CREATE INDEX "idx_game_publishers_steam_appid" ON "game_publishers" USING btree ("steam_appid" int4_ops);--> statement-breakpoint
 CREATE INDEX "idx_game_screenshots_steam_appid" ON "game_screenshots" USING btree ("steam_appid" int4_ops);--> statement-breakpoint
 CREATE INDEX "idx_game_movies_steam_appid" ON "game_movies" USING btree ("steam_appid" int4_ops);--> statement-breakpoint
-CREATE INDEX "idx_game_reviews_steam_appid" ON "game_reviews" USING btree ("steam_appid" int4_ops);
+CREATE INDEX "idx_reviews_appid_created" ON "game_reviews" USING btree ("steam_appid" int4_ops,"review_created" int4_ops);--> statement-breakpoint
+CREATE INDEX "idx_reviews_appid_voted_up" ON "game_reviews" USING btree ("steam_appid" bool_ops,"voted_up" bool_ops);--> statement-breakpoint
+CREATE INDEX "idx_reviews_appid_weighted" ON "game_reviews" USING btree ("steam_appid" float8_ops,"weighted_vote_score" int4_ops);--> statement-breakpoint
+CREATE VIEW "public"."genre_names_for_game_view" AS (SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text);
 */

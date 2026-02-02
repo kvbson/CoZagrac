@@ -43,6 +43,11 @@ export const gameService = {
     });
   },
 
+  async getAllAppIds(): Promise<number[]> {
+    const rows = await db.select({ steamAppid: gameInfo.steamAppid }).from(gameInfo);
+    return rows.map((r) => r.steamAppid);
+  },
+
   async getByAppId(appId: number): Promise<GameInfoResult | null> {
     //TODO: maybe separate into diff queries later instead of left joins (zobacz ktore schematy maja najwiecej danych dla danej gry i je rozdziel)
     const rows = await db
