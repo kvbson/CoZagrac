@@ -4,6 +4,7 @@ import { db } from '../db/init.js';
 import { gameReviews } from '../drizzle/schema.js';
 import { Tx } from '../types/db.types.js';
 import { CreateReviewInput } from '../schemas/review.zod.js';
+import { LIMITS } from './embeddings.service.js';
 
 export type SyncResult = {
   savedPositive: number;
@@ -97,6 +98,43 @@ export const reviewService = {
       total: Number(count),
       pages: Math.ceil(Number(count) / safeLimit),
       items,
+    };
+  },
+
+  /**
+   * Get review candidates for embedding generation
+   */
+  async getEmbeddingCandidatesForGame(steamAppid: number): Promise<{
+    positive: string[];
+    negative: string[];
+  }> {
+    const { MAX_NEGATIVE_REVIEWS, MAX_POSITIVE_REVIEWS, MAX_REVIEW_CHARS } = LIMITS;
+
+    const baseWhere = and(
+      eq(gameReviews.steamAppid, steamAppid),
+      sql`${gameReviews.review} IS NOT NULL`,
+      sql`length(${gameReviews.review}) >= ${MAX_REVIEW_CHARS}`,
+    );
+
+    const [positive, negative] = await Promise.all([
+      db
+        .select({ review: gameReviews.review })
+        .from(gameReviews)
+        .where(and(baseWhere, eq(gameReviews.votedUp, true)))
+        .orderBy(desc(gameReviews.weightedVoteScore), desc(gameReviews.reviewCreated))
+        .limit(MAX_POSITIVE_REVIEWS),
+
+      db
+        .select({ review: gameReviews.review })
+        .from(gameReviews)
+        .where(and(baseWhere, eq(gameReviews.votedUp, false)))
+        .orderBy(desc(gameReviews.weightedVoteScore), desc(gameReviews.reviewCreated))
+        .limit(MAX_NEGATIVE_REVIEWS),
+    ]);
+
+    return {
+      positive: positive.map((r) => r.review).filter(Boolean) as string[],
+      negative: negative.map((r) => r.review).filter(Boolean) as string[],
     };
   },
 };

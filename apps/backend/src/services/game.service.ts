@@ -53,6 +53,8 @@ export const gameService = {
     const rows = await db
       .select({
         game: gameInfo,
+        shortDescription: gameInfo.shortDescription,
+        aboutTheGame: gameInfo.aboutTheGame,
         genre: genres,
         category: categories,
         movie: gameMovies,

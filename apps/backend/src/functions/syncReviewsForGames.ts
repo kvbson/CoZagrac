@@ -141,62 +141,71 @@ export async function syncReviewsForAllGames({
 }: SyncAllGamesConfig) {
   const appIds = await gameService.getAllAppIds();
   const startIndex = startAfterAppId ? appIds.indexOf(startAfterAppId) : -1;
-
   const slicedAppIds = startIndex === -1 ? appIds : appIds.slice(startIndex);
+
   for (const appId of slicedAppIds) {
     logger.info(`=== Sync start for appId ${appId} ===`);
 
-    const positiveTarget = Math.floor(reviewCountForGame * (positivePercentageThreshold / 100));
-    const negativeTarget = reviewCountForGame - positiveTarget;
+    try {
+      const positiveTarget = Math.floor(reviewCountForGame * (positivePercentageThreshold / 100));
+      const negativeTarget = reviewCountForGame - positiveTarget;
 
-    /* ================= POSITIVE ================= */
+      /* ================= POSITIVE ================= */
 
-    const positiveStrict = await fetchAndSyncReviewsForGame({
-      appId,
-      reviewType: 'positive',
-      maxReviews: positiveTarget,
-      textSize,
-    });
+      const positiveStrict = await fetchAndSyncReviewsForGame({
+        appId,
+        reviewType: 'positive',
+        maxReviews: positiveTarget,
+        textSize,
+      });
 
-    // fallback
-    if (positiveStrict.savedTotal < positiveTarget) {
-      const remainingPositive = positiveTarget - positiveStrict.savedTotal;
+      if (positiveStrict.savedTotal < positiveTarget) {
+        const remainingPositive = positiveTarget - positiveStrict.savedTotal;
 
-      logger.info(`[FALLBACK] appId=${appId} positive remaining=${remainingPositive}`);
+        logger.info(`[FALLBACK] appId=${appId} positive remaining=${remainingPositive}`);
 
-      if (remainingPositive > 0) {
-        await fetchAndSyncReviewsForGame({
-          appId,
-          reviewType: 'positive',
-          maxReviews: remainingPositive,
-          textSize: { min: 0, max: textSize.max },
-        });
+        if (remainingPositive > 0) {
+          await fetchAndSyncReviewsForGame({
+            appId,
+            reviewType: 'positive',
+            maxReviews: remainingPositive,
+            textSize: { min: 0, max: textSize.max },
+          });
+        }
       }
-    }
 
-    /* ================= NEGATIVE ================= */
-    const negativeStrict = await fetchAndSyncReviewsForGame({
-      appId,
-      reviewType: 'negative',
-      maxReviews: negativeTarget,
-      textSize,
-    });
+      /* ================= NEGATIVE ================= */
 
-    if (negativeStrict.savedTotal < negativeTarget) {
-      const remainingNegative = negativeTarget - negativeStrict.savedTotal;
+      const negativeStrict = await fetchAndSyncReviewsForGame({
+        appId,
+        reviewType: 'negative',
+        maxReviews: negativeTarget,
+        textSize,
+      });
 
-      logger.info(`[FALLBACK] appId=${appId} negative remaining=${remainingNegative}`);
+      if (negativeStrict.savedTotal < negativeTarget) {
+        const remainingNegative = negativeTarget - negativeStrict.savedTotal;
 
-      if (remainingNegative > 0) {
-        await fetchAndSyncReviewsForGame({
-          appId,
-          reviewType: 'negative',
-          maxReviews: remainingNegative,
-          textSize: { min: 0, max: textSize.max },
-        });
+        logger.info(`[FALLBACK] appId=${appId} negative remaining=${remainingNegative}`);
+
+        if (remainingNegative > 0) {
+          await fetchAndSyncReviewsForGame({
+            appId,
+            reviewType: 'negative',
+            maxReviews: remainingNegative,
+            textSize: { min: 0, max: textSize.max },
+          });
+        }
       }
+
+      logger.checkpoint(appId);
+      logger.info(`=== Sync done for appId ${appId} ===`);
+    } catch (err) {
+      logger.error(
+        `❌ Sync failed for appId ${appId}`,
+        err instanceof Error ? { message: err.message, stack: err.stack } : err,
+      );
+      continue;
     }
-    logger.checkpoint(appId);
-    logger.info(`=== Sync done for appId ${appId} ===`);
   }
 }

@@ -36,6 +36,8 @@ export type GamePayload = {
 export type GameInfoResult = {
   steamAppid: number;
   name: string;
+  shortDescription: string | null;
+  aboutTheGame: string | null;
   genres: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   movies: (typeof gameMovies.$inferSelect)[];
