@@ -50,3 +50,16 @@ export function buildUserPreferenceText(params: {
     Playstyle signals: ${params.playstyle.join(', ')}.
     `.trim();
 }
+
+export function meanOrZero(vectors: number[][], dim: number): number[] {
+  if (!vectors.length) return Array(dim).fill(0);
+
+  const out = Array(dim).fill(0);
+  for (const vec of vectors) {
+    for (let i = 0; i < dim; i++) {
+      out[i] += vec[i];
+    }
+  }
+
+  return out.map((v) => v / vectors.length);
+}

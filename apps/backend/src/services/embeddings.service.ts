@@ -12,9 +12,10 @@ import {
   weightedMean,
   uniqueLimited,
   buildUserPreferenceText,
+  meanOrZero,
 } from '../utils/embedding.helpers.js';
-import { OpenAI } from 'openai';
 import { userService } from './user.service.js';
+import { openAiClient, model } from '../clients/openai/index.js';
 
 export const LIMITS = {
   MAX_REVIEW_CHARS: 2000, // ~500 tokenów
@@ -28,13 +29,6 @@ export const USER_LIMITS = {
   MAX_GENRES: 50,
   MAX_CATEGORIES: 50,
 };
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  logger: { debug: logger.debug, error: logger.error, info: logger.info, warn: logger.info },
-});
-
-const model = 'text-embedding-3-small';
 
 export const embeddingService = {
   game: {
@@ -92,7 +86,7 @@ export const embeddingService = {
           Game features: ${categories.join(', ')}.
       `.trim();
 
-      if (!taxonomyText) {
+      if (!genres.length && !categories.length) {
         logger.error(`Missing taxonomy for appId: ${steamAppId}`);
         return;
       }
@@ -106,22 +100,22 @@ export const embeddingService = {
        */
 
       const [descriptionRes, positiveRes, negativeRes, taxonomyRes] = await Promise.all([
-        openai.embeddings.create({
+        openAiClient.embeddings.create({
           model,
           input: descriptionText,
         }),
 
-        openai.embeddings.create({
+        openAiClient.embeddings.create({
           model,
           input: positiveTexts,
         }),
 
-        openai.embeddings.create({
+        openAiClient.embeddings.create({
           model,
           input: negativeTexts,
         }),
 
-        openai.embeddings.create({
+        openAiClient.embeddings.create({
           model,
           input: taxonomyText,
         }),
@@ -130,22 +124,16 @@ export const embeddingService = {
       /**
        * 5. Aggregate review embeddings
        */
-      const meanEmbedding = (vectors: number[][]): number[] => {
-        const len = vectors[0].length;
-        const out = Array(len).fill(0);
-
-        for (const vec of vectors) {
-          for (let i = 0; i < len; i++) {
-            out[i] += vec[i];
-          }
-        }
-
-        return out.map((v) => v / vectors.length);
-      };
-
       const descriptionVec = descriptionRes.data[0].embedding;
-      const positiveVec = meanEmbedding(positiveRes.data.map((d) => d.embedding));
-      const negativeVec = meanEmbedding(negativeRes.data.map((d) => d.embedding));
+      const positiveVec = meanOrZero(
+        positiveRes.data.map((d) => d.embedding),
+        descriptionVec.length,
+      );
+
+      const negativeVec = meanOrZero(
+        negativeRes.data.map((d) => d.embedding),
+        descriptionVec.length,
+      );
       const taxonomyVec = taxonomyRes.data[0].embedding;
 
       /**
@@ -237,8 +225,8 @@ export const embeddingService = {
       const ownedGames = owned?.games ?? [];
       const recentGames = recent?.games ?? [];
 
-      if (!ownedGames.length || !recentGames.length) {
-        logger.error('[USER_EMBEDDING] missing owned or recent games. Cancelling generating...');
+      if (!ownedGames.length) {
+        logger.warn('[USER_EMBEDDING] No owned games – cannot generate embedding.');
         return;
       }
 
@@ -270,7 +258,9 @@ export const embeddingService = {
 
       const totalPlaytime = ownedGames.reduce((a, g) => a + (g.playtime_forever ?? 0), 0) / 60;
 
-      const recentPlaytime = recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60;
+      const recentPlaytime = recentGames.length
+        ? recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60
+        : 0;
 
       if (recentPlaytime > 20) playstyleSignals.push('highly active player');
       if (recentPlaytime < 2) playstyleSignals.push('low activity player');
@@ -294,7 +284,7 @@ export const embeddingService = {
        * 4. Generate embeddings (SAME model as games)
        */
       const [taxonomyRes] = await Promise.all([
-        openai.embeddings.create({
+        openAiClient.embeddings.create({
           model,
           input: preferenceText,
         }),
@@ -310,7 +300,7 @@ export const embeddingService = {
         Recently played hours: ${Math.round(recentPlaytime)}.
       `.trim();
 
-      const gameplayRes = await openai.embeddings.create({
+      const gameplayRes = await openAiClient.embeddings.create({
         model,
         input: gameplayBiasText,
       });
@@ -318,10 +308,14 @@ export const embeddingService = {
       /**
        * 6. Final user embedding
        */
+      /* Recent playtime - to weight, 50h and over is max weight, cap weight at 0.4 */
+      const gameplayWeight = Math.min(0.4, recentPlaytime / 50);
+      /* rest for taxonomy */
+      const taxonomyWeight = 1 - gameplayWeight;
       const finalEmbedding = l2Normalize(
         weightedMean([
-          { vec: taxonomyVec, weight: 0.8 },
-          { vec: gameplayRes.data[0].embedding, weight: 0.2 },
+          { vec: taxonomyVec, weight: taxonomyWeight },
+          { vec: gameplayRes.data[0].embedding, weight: gameplayWeight },
         ]),
       );
 
