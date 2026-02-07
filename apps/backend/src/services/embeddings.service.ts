@@ -1,11 +1,20 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../db/init.js';
-import { gameEmbeddings, gameInfo, userEmbeddings } from '../drizzle/schema.js';
-import { CreateReviewInput } from '../schemas/review.zod.js';
-import { CreateGameInput } from '../schemas/game.zod.js';
+import { gameEmbeddings, userEmbeddings } from '../drizzle/schema.js';
 import { gameService } from './game.service.js';
 import { reviewService } from './review.service.js';
 import { logger } from '../utils/logger.js';
+import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
+import { recentlyPlayedEndpoint } from '../clients/steam/endpoints/userContext/recentlyPlayed.endpoint.js';
+import {
+  trimText,
+  l2Normalize,
+  weightedMean,
+  uniqueLimited,
+  buildUserPreferenceText,
+} from '../utils/embedding.helpers.js';
+import { OpenAI } from 'openai';
+import { userService } from './user.service.js';
 
 export const LIMITS = {
   MAX_REVIEW_CHARS: 2000, // ~500 tokenów
@@ -14,37 +23,21 @@ export const LIMITS = {
   MAX_DESCRIPTION_CHARS: 4000,
 };
 
-function trimText(text: string, maxChars: number) {
-  return text.length > maxChars ? text.slice(0, maxChars) : text;
-}
+export const USER_LIMITS = {
+  MAX_GAMES_FOR_USER: 30,
+  MAX_GENRES: 50,
+  MAX_CATEGORIES: 50,
+};
 
-function weightedMean(items: { vec: number[]; weight: number }[]): number[] {
-  const len = items[0].vec.length;
-  const out = Array(len).fill(0);
-  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  logger: { debug: logger.debug, error: logger.error, info: logger.info, warn: logger.info },
+});
 
-  for (const { vec, weight } of items) {
-    for (let i = 0; i < len; i++) {
-      out[i] += vec[i] * weight;
-    }
-  }
-
-  return out.map((v) => v / totalWeight);
-}
+const model = 'text-embedding-3-small';
 
 export const embeddingService = {
   game: {
-    /**
-     * Insert a new game embedding (append-only)
-     */
-    async insert(steamAppid: number, embedding: number[], modelName?: string) {
-      await db.insert(gameEmbeddings).values({
-        steamAppid,
-        embedding,
-        modelName,
-      });
-    },
-
     /**
      * Generate and save new game embedding
      */
@@ -95,19 +88,22 @@ export const embeddingService = {
       const categories = gameInfo.categories?.map((c) => c.name) ?? [];
 
       const taxonomyText = `
-Game genres: ${genres.join(', ')}.
-Game features: ${categories.join(', ')}.
-`.trim();
+          Game genres: ${genres.join(', ')}.
+          Game features: ${categories.join(', ')}.
+      `.trim();
 
       if (!taxonomyText) {
         logger.error(`Missing taxonomy for appId: ${steamAppId}`);
         return;
       }
 
+      logger.info(
+        `[GAME_EMBEDDINGS] Generating embeddings for game: ${steamAppId}. Taxonomy: ${taxonomyText}, Description: ${descriptionText}`,
+      );
+
       /**
        * 4. Generate embeddings (batched)
        */
-      const model = 'text-embedding-3-small';
 
       const [descriptionRes, positiveRes, negativeRes, taxonomyRes] = await Promise.all([
         openai.embeddings.create({
@@ -155,28 +151,35 @@ Game features: ${categories.join(', ')}.
       /**
        * 6. Final weighted embedding
        */
-      const finalEmbedding = weightedMean([
-        { vec: descriptionVec, weight: 0.4 },
-        { vec: positiveVec, weight: 0.3 },
-        { vec: negativeVec, weight: 0.15 },
-        { vec: taxonomyVec, weight: 0.15 },
-      ]);
+      const finalEmbedding = l2Normalize(
+        weightedMean([
+          { vec: descriptionVec, weight: 0.4 },
+          { vec: positiveVec, weight: 0.3 },
+          { vec: negativeVec, weight: 0.15 },
+          { vec: taxonomyVec, weight: 0.15 },
+        ]),
+      );
 
       /**
        * 7. Persist (delete + insert)
        */
       await db.transaction(async (tx) => {
-        await tx.delete(gameEmbeddings).where(eq(gameEmbeddings.steamAppid, steamAppId));
+        try {
+          await tx.delete(gameEmbeddings).where(eq(gameEmbeddings.steamAppid, steamAppId));
 
-        await tx.insert(gameEmbeddings).values({
-          steamAppid: steamAppId,
-          embedding: finalEmbedding,
-          modelName: model,
-        });
+          await tx.insert(gameEmbeddings).values({
+            steamAppid: steamAppId,
+            embedding: finalEmbedding,
+            modelName: model,
+          });
+        } catch (error: unknown) {
+          logger.error(`[GAME_EMBEDDINGS] Error during db transaction.`, error);
+        }
       });
-
+      logger.info(`[GAME_EMBEDDINGS] Game embeddings saved successfully.`);
       return finalEmbedding;
     },
+
     /**
      * Find similar games to a given vector
      */
@@ -218,14 +221,130 @@ Game features: ${categories.join(', ')}.
 
   user: {
     /**
-     * Insert a new user embedding
+     * Generate and save user embeddings
      */
-    async insert(userId: string, embedding: number[], modelName?: string) {
-      await db.insert(userEmbeddings).values({
-        userId,
-        embedding,
-        modelName,
+    async generateUserEmbedding(id: string) {
+      const { steamId } = await userService.getById(id);
+      if (!steamId) {
+        logger.error('[USER_EMBEDDING] user misses steamId - connect steam account first.');
+        return;
+      }
+      const [{ response: owned }, { response: recent }] = await Promise.all([
+        ownedGamesEndpoint.getData(steamId),
+        recentlyPlayedEndpoint.getData(steamId),
+      ]);
+
+      const ownedGames = owned?.games ?? [];
+      const recentGames = recent?.games ?? [];
+
+      if (!ownedGames.length || !recentGames.length) {
+        logger.error('[USER_EMBEDDING] missing owned or recent games. Cancelling generating...');
+        return;
+      }
+
+      const topGames = [...ownedGames]
+        .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
+        .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
+
+      /**
+       * 1. Load game infos (genres + categories)
+       */
+      const gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
+
+      const genres = uniqueLimited(
+        gameInfos.flatMap((g) => g?.genres ?? []),
+        USER_LIMITS.MAX_GENRES,
+        (g) => g.id,
+      ).map((g) => g.name);
+
+      const categories = uniqueLimited(
+        gameInfos.flatMap((g) => g?.categories ?? []),
+        USER_LIMITS.MAX_CATEGORIES,
+        (c) => c.id,
+      ).map((c) => c.name);
+
+      /**
+       * 2. Playstyle inference (implicit opinions)
+       */
+      const playstyleSignals: string[] = [];
+
+      const totalPlaytime = ownedGames.reduce((a, g) => a + (g.playtime_forever ?? 0), 0) / 60;
+
+      const recentPlaytime = recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60;
+
+      if (recentPlaytime > 20) playstyleSignals.push('highly active player');
+      if (recentPlaytime < 2) playstyleSignals.push('low activity player');
+      if (totalPlaytime > 1000) playstyleSignals.push('hardcore gamer');
+
+      /**
+       * 3. User preference text (CORE)
+       */
+      const preferenceText = buildUserPreferenceText({
+        genres,
+        categories,
+        topGames: topGames.map((g) => g.name).filter(Boolean),
+        playstyle: playstyleSignals,
       });
+
+      logger.info(
+        `[USER_EMBEDDINGS] Generating embeddings for user: ${id}. Taxonomy: ${preferenceText}`,
+      );
+
+      /**
+       * 4. Generate embeddings (SAME model as games)
+       */
+      const [taxonomyRes] = await Promise.all([
+        openai.embeddings.create({
+          model,
+          input: preferenceText,
+        }),
+      ]);
+
+      const taxonomyVec = taxonomyRes.data[0].embedding;
+
+      /**
+       * 5. Gameplay numeric bias (small)
+       */
+      const gameplayBiasText = `
+        Total playtime: ${Math.round(totalPlaytime)} hours.
+        Recently played hours: ${Math.round(recentPlaytime)}.
+      `.trim();
+
+      const gameplayRes = await openai.embeddings.create({
+        model,
+        input: gameplayBiasText,
+      });
+
+      /**
+       * 6. Final user embedding
+       */
+      const finalEmbedding = l2Normalize(
+        weightedMean([
+          { vec: taxonomyVec, weight: 0.8 },
+          { vec: gameplayRes.data[0].embedding, weight: 0.2 },
+        ]),
+      );
+
+      /**
+       * 7. Persist (delete + insert)
+       */
+      await db.transaction(async (tx) => {
+        try {
+          await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, id));
+
+          await tx.insert(userEmbeddings).values({
+            userId: id,
+            embedding: finalEmbedding,
+            modelName: model,
+          });
+        } catch (error: unknown) {
+          logger.error(`[USER_EMBEDDINGS] Error during db transaction.`, error);
+        }
+      });
+
+      logger.info(`[USER_EMBEDDINGS] User's embeddings saved successfully.`);
+
+      return finalEmbedding;
     },
 
     /**

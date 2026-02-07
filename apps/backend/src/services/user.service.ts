@@ -29,8 +29,11 @@ export const userService = {
   },
 
   async getById(id: string) {
-    const [{ id: userId }] = await db.select({ id: users.id }).from(users).where(eq(users.id, id));
-    return { userId };
+    const [{ id: userId, steamId }] = await db
+      .select({ id: users.id, steamId: users.steamId })
+      .from(users)
+      .where(eq(users.id, id));
+    return { userId, steamId };
   },
 
   async getByEmail(email: string) {
