@@ -20,17 +20,6 @@ export type GamePayload = {
     pathThumbnail?: string;
     pathFull?: string;
   }[];
-  reviews: {
-    recommendationId: number;
-    review?: string;
-    votedUp?: boolean;
-    votesUp?: number;
-    votesFunny?: number;
-    weightedVoteScore?: number;
-    steamPurchase?: boolean;
-    commentCount?: number;
-    reviewCreated?: string;
-  }[];
 };
 
 export type GameInfoResult = {
@@ -38,6 +27,7 @@ export type GameInfoResult = {
   name: string;
   shortDescription: string | null;
   aboutTheGame: string | null;
+  releaseDate: string | null;
   genres: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   movies: (typeof gameMovies.$inferSelect)[];

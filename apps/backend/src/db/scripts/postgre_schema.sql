@@ -340,6 +340,12 @@ CREATE INDEX IF NOT EXISTS idx_user_embeddings_vector
   ON user_embeddings
   USING hnsw (embedding vector_cosine_ops);
 
+CREATE INDEX IF NOT EXISTS game_embeddings_version_idx
+ON game_embeddings (embedding_version);
+
+CREATE INDEX user_embeddings_version_idx
+ON user_embeddings (embedding_version);
+
 -- =========================
 -- FULL TEXT SEARCH (GAME INFO)
 -- =========================

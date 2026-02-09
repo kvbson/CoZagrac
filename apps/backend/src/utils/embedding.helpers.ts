@@ -3,17 +3,34 @@ export function trimText(text: string, maxChars: number) {
 }
 
 export function weightedMean(items: { vec: number[]; weight: number }[]): number[] {
-  const len = items[0].vec.length;
-  const out = Array(len).fill(0);
-  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  if (items.length === 0) {
+    throw new Error('Cannot compute weighted mean of empty array');
+  }
 
-  for (const { vec, weight } of items) {
-    for (let i = 0; i < len; i++) {
-      out[i] += vec[i] * weight;
+  const len = items[0].vec.length;
+
+  for (const item of items) {
+    if (item.vec.length !== len) {
+      throw new Error(`All vectors must have same length. Expected ${len}, got ${item.vec.length}`);
     }
   }
 
-  return out.map((v) => v / totalWeight);
+  const totalWeight = items.reduce((s, i) => Math.abs(s) + Math.abs(i.weight), 0);
+
+  if (totalWeight === 0) {
+    return Array(len).fill(0);
+  }
+
+  const out = Array(len).fill(0);
+
+  for (const { vec, weight } of items) {
+    const normalizedWeight = weight / totalWeight;
+    for (let i = 0; i < len; i++) {
+      out[i] += vec[i] * normalizedWeight;
+    }
+  }
+
+  return out;
 }
 
 export function l2Normalize(vec: number[]): number[] {
@@ -62,4 +79,19 @@ export function meanOrZero(vectors: number[][], dim: number): number[] {
   }
 
   return out.map((v) => v / vectors.length);
+}
+
+export function chunkReviews(reviews: string[], chunkSize = 5): string[] {
+  const chunks: string[] = [];
+
+  for (let i = 0; i < reviews.length; i += chunkSize) {
+    chunks.push(
+      reviews
+        .slice(i, i + chunkSize)
+        .map((t) => `- ${t}`)
+        .join('\n'),
+    );
+  }
+
+  return chunks;
 }

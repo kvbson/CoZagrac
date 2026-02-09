@@ -51,6 +51,121 @@
       "policies": {},
       "isRLSEnabled": false
     },
+    "public.game_embeddings": {
+      "name": "game_embeddings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_name": {
+          "name": "model_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "embedding_version": {
+          "name": "embedding_version",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_game_embeddings_steam_appid": {
+          "name": "idx_game_embeddings_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_embeddings_vector": {
+          "name": "idx_game_embeddings_vector",
+          "columns": [
+            {
+              "expression": "embedding",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "hnsw",
+          "with": {}
+        },
+        "idx_game_embeddings_version": {
+          "name": "idx_game_embeddings_version",
+          "columns": [
+            {
+              "expression": "embedding_version",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_embeddings_steam_appid_fkey": {
+          "name": "game_embeddings_steam_appid_fkey",
+          "tableFrom": "game_embeddings",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
     "public.categories": {
       "name": "categories",
       "schema": "",
@@ -98,8 +213,8 @@
       "policies": {},
       "isRLSEnabled": false
     },
-    "public.game_embeddings": {
-      "name": "game_embeddings",
+    "public.user_embeddings": {
+      "name": "user_embeddings",
       "schema": "",
       "columns": {
         "id": {
@@ -109,9 +224,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "steam_appid": {
-          "name": "steam_appid",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -133,17 +248,23 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "embedding_version": {
+          "name": "embedding_version",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
-        "idx_game_embeddings_steam_appid": {
-          "name": "idx_game_embeddings_steam_appid",
+        "idx_user_embeddings_user_id": {
+          "name": "idx_user_embeddings_user_id",
           "columns": [
             {
-              "expression": "steam_appid",
+              "expression": "user_id",
               "asc": true,
               "nulls": "last",
-              "opclass": "int4_ops",
+              "opclass": "uuid_ops",
               "isExpression": false
             }
           ],
@@ -152,8 +273,8 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_embeddings_vector": {
-          "name": "idx_game_embeddings_vector",
+        "idx_user_embeddings_vector": {
+          "name": "idx_user_embeddings_vector",
           "columns": [
             {
               "expression": "embedding",
@@ -167,19 +288,35 @@
           "concurrently": false,
           "method": "hnsw",
           "with": {}
+        },
+        "idx_user_embeddings_version": {
+          "name": "idx_user_embeddings_version",
+          "columns": [
+            {
+              "expression": "embedding_version",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
-        "game_embeddings_steam_appid_fkey": {
-          "name": "game_embeddings_steam_appid_fkey",
-          "tableFrom": "game_embeddings",
-          "tableTo": "game_info",
+        "user_embeddings_user_id_fkey": {
+          "name": "user_embeddings_user_id_fkey",
+          "tableFrom": "user_embeddings",
+          "tableTo": "users",
           "schemaTo": "public",
           "columnsFrom": [
-            "steam_appid"
+            "user_id"
           ],
           "columnsTo": [
-            "steam_appid"
+            "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -240,99 +377,6 @@
           "name": "users_steam_id_key"
         }
       },
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.user_embeddings": {
-      "name": "user_embeddings",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "embedding": {
-          "name": "embedding",
-          "type": "vector(1536)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "model_name": {
-          "name": "model_name",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_user_embeddings_user_id": {
-          "name": "idx_user_embeddings_user_id",
-          "columns": [
-            {
-              "expression": "user_id",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_user_embeddings_vector": {
-          "name": "idx_user_embeddings_vector",
-          "columns": [
-            {
-              "expression": "embedding",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "vector_cosine_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "hnsw",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "user_embeddings_user_id_fkey": {
-          "name": "user_embeddings_user_id_fkey",
-          "tableFrom": "user_embeddings",
-          "tableTo": "users",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "checkConstraints": {},
       "policies": {},
       "isRLSEnabled": false
@@ -716,69 +760,6 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public._prisma_migrations": {
-      "name": "_prisma_migrations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(36)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "checksum": {
-          "name": "checksum",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "finished_at": {
-          "name": "finished_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "migration_name": {
-          "name": "migration_name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "logs": {
-          "name": "logs",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rolled_back_at": {
-          "name": "rolled_back_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "applied_steps_count": {
-          "name": "applied_steps_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        }
-      },
-      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

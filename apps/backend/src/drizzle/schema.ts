@@ -31,6 +31,37 @@ export const genres = pgTable(
   ],
 );
 
+export const gameEmbeddings = pgTable(
+  'game_embeddings',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    steamAppid: integer('steam_appid').notNull(),
+    embedding: vector({ dimensions: 1536 }).notNull(),
+    modelName: varchar('model_name'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    embeddingVersion: varchar('embedding_version', { length: 32 }).notNull(),
+  },
+  (table) => [
+    index('idx_game_embeddings_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    index('idx_game_embeddings_vector').using(
+      'hnsw',
+      table.embedding.asc().nullsLast().op('vector_cosine_ops'),
+    ),
+    index('idx_game_embeddings_version').using(
+      'btree',
+      table.embeddingVersion.asc().nullsLast().op('text_ops'),
+    ),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'game_embeddings_steam_appid_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
 export const categories = pgTable(
   'categories',
   {
@@ -44,28 +75,33 @@ export const categories = pgTable(
   ],
 );
 
-export const gameEmbeddings = pgTable(
-  'game_embeddings',
+export const userEmbeddings = pgTable(
+  'user_embeddings',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    steamAppid: integer('steam_appid').notNull(),
+    userId: uuid('user_id').notNull(),
     embedding: vector({ dimensions: 1536 }).notNull(),
     modelName: varchar('model_name'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    embeddingVersion: varchar('embedding_version', { length: 32 }).notNull(),
   },
   (table) => [
-    index('idx_game_embeddings_steam_appid').using(
+    index('idx_user_embeddings_user_id').using(
       'btree',
-      table.steamAppid.asc().nullsLast().op('int4_ops'),
+      table.userId.asc().nullsLast().op('uuid_ops'),
     ),
-    index('idx_game_embeddings_vector').using(
+    index('idx_user_embeddings_vector').using(
       'hnsw',
       table.embedding.asc().nullsLast().op('vector_cosine_ops'),
     ),
+    index('idx_user_embeddings_version').using(
+      'btree',
+      table.embeddingVersion.asc().nullsLast().op('text_ops'),
+    ),
     foreignKey({
-      columns: [table.steamAppid],
-      foreignColumns: [gameInfo.steamAppid],
-      name: 'game_embeddings_steam_appid_fkey',
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_embeddings_user_id_fkey',
     }).onDelete('cascade'),
   ],
 );
@@ -80,32 +116,6 @@ export const users = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
   },
   (table) => [unique('users_steam_id_key').on(table.steamId)],
-);
-
-export const userEmbeddings = pgTable(
-  'user_embeddings',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid('user_id').notNull(),
-    embedding: vector({ dimensions: 1536 }).notNull(),
-    modelName: varchar('model_name'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-  },
-  (table) => [
-    index('idx_user_embeddings_user_id').using(
-      'btree',
-      table.userId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_user_embeddings_vector').using(
-      'hnsw',
-      table.embedding.asc().nullsLast().op('vector_cosine_ops'),
-    ),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'user_embeddings_user_id_fkey',
-    }).onDelete('cascade'),
-  ],
 );
 
 export const tags = pgTable(
@@ -195,17 +205,6 @@ export const gameInfo = pgTable(
     ),
   ],
 );
-
-export const prismaMigrations = pgTable('_prisma_migrations', {
-  id: varchar({ length: 36 }).primaryKey().notNull(),
-  checksum: varchar({ length: 64 }).notNull(),
-  finishedAt: timestamp('finished_at', { withTimezone: true, mode: 'string' }),
-  migrationName: varchar('migration_name', { length: 255 }).notNull(),
-  logs: text(),
-  rolledBackAt: timestamp('rolled_back_at', { withTimezone: true, mode: 'string' }),
-  startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-  appliedStepsCount: integer('applied_steps_count').default(0).notNull(),
-});
 
 export const gameGenres = pgTable(
   'game_genres',

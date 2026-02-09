@@ -9,6 +9,15 @@ CREATE TABLE "genres" (
 	CONSTRAINT "genres_name_key" UNIQUE("name")
 );
 --> statement-breakpoint
+CREATE TABLE "game_embeddings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"steam_appid" integer NOT NULL,
+	"embedding" vector(1536) NOT NULL,
+	"model_name" varchar,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"embedding_version" varchar(32) NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "categories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"steam_category_id" integer,
@@ -17,12 +26,13 @@ CREATE TABLE "categories" (
 	CONSTRAINT "categories_name_key" UNIQUE("name")
 );
 --> statement-breakpoint
-CREATE TABLE "game_embeddings" (
+CREATE TABLE "user_embeddings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"steam_appid" integer NOT NULL,
+	"user_id" uuid NOT NULL,
 	"embedding" vector(1536) NOT NULL,
 	"model_name" varchar,
-	"created_at" timestamp with time zone DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now(),
+	"embedding_version" varchar(32) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -32,14 +42,6 @@ CREATE TABLE "users" (
 	"password_hash" varchar,
 	"created_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "users_steam_id_key" UNIQUE("steam_id")
-);
---> statement-breakpoint
-CREATE TABLE "user_embeddings" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
-	"embedding" vector(1536) NOT NULL,
-	"model_name" varchar,
-	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "tags" (
@@ -90,17 +92,6 @@ CREATE TABLE "game_info" (
 	"search_vector" "tsvector",
 	"is_candidate" boolean,
 	"review_tier" varchar(1)
-);
---> statement-breakpoint
-CREATE TABLE "_prisma_migrations" (
-	"id" varchar(36) PRIMARY KEY NOT NULL,
-	"checksum" varchar(64) NOT NULL,
-	"finished_at" timestamp with time zone,
-	"migration_name" varchar(255) NOT NULL,
-	"logs" text,
-	"rolled_back_at" timestamp with time zone,
-	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"applied_steps_count" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "game_genres" (
@@ -192,8 +183,10 @@ ALTER TABLE "game_movies" ADD CONSTRAINT "game_movies_steam_appid_fkey" FOREIGN 
 ALTER TABLE "game_reviews" ADD CONSTRAINT "game_reviews_steam_appid_fkey" FOREIGN KEY ("steam_appid") REFERENCES "public"."game_info"("steam_appid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_game_embeddings_steam_appid" ON "game_embeddings" USING btree ("steam_appid" int4_ops);--> statement-breakpoint
 CREATE INDEX "idx_game_embeddings_vector" ON "game_embeddings" USING hnsw ("embedding" vector_cosine_ops);--> statement-breakpoint
+CREATE INDEX "idx_game_embeddings_version" ON "game_embeddings" USING btree ("embedding_version" text_ops);--> statement-breakpoint
 CREATE INDEX "idx_user_embeddings_user_id" ON "user_embeddings" USING btree ("user_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_user_embeddings_vector" ON "user_embeddings" USING hnsw ("embedding" vector_cosine_ops);--> statement-breakpoint
+CREATE INDEX "idx_user_embeddings_version" ON "user_embeddings" USING btree ("embedding_version" text_ops);--> statement-breakpoint
 CREATE INDEX "idx_sessions_expire" ON "sessions" USING btree ("expire" timestamptz_ops);--> statement-breakpoint
 CREATE INDEX "idx_game_info_is_candidate" ON "game_info" USING btree ("is_candidate" bool_ops);--> statement-breakpoint
 CREATE INDEX "idx_game_info_is_free" ON "game_info" USING btree ("is_free" bool_ops);--> statement-breakpoint

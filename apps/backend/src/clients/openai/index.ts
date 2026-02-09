@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
+import OpenAI, { ClientOptions } from 'openai';
 import { logger } from '../../utils/logger.js';
 
-const openAiLogger = {
+const openAiLogger: ClientOptions['logger'] = {
   debug: (msg: string, ...rest: unknown[]) => logger.debug(msg, rest.length ? { rest } : undefined),
 
   info: (msg: string, ...rest: unknown[]) => logger.info(msg, rest.length ? { rest } : undefined),

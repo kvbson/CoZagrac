@@ -55,6 +55,7 @@ export const gameService = {
         game: gameInfo,
         shortDescription: gameInfo.shortDescription,
         aboutTheGame: gameInfo.aboutTheGame,
+        releaseDate: gameInfo.releaseDate,
         genre: genres,
         category: categories,
         movie: gameMovies,
