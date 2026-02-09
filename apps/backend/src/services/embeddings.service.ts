@@ -91,9 +91,10 @@ export const embeddingService = {
         return;
       }
 
-      logger.info(
-        `[GAME_EMBEDDINGS] Generating embeddings for game: ${steamAppId}. Taxonomy: ${taxonomyText}, Description: ${descriptionText}`,
-      );
+      logger.info(`[GAME_EMBEDDINGS] Generating embeddings for game: ${steamAppId}.`, {
+        descriptionText,
+        taxonomyText,
+      });
 
       /**
        * 4. Generate embeddings (batched)
@@ -278,6 +279,7 @@ export const embeddingService = {
 
       logger.info(
         `[USER_EMBEDDINGS] Generating embeddings for user: ${id}. Taxonomy: ${preferenceText}`,
+        { genres, categories, topGames, playstyleSignals },
       );
 
       /**
