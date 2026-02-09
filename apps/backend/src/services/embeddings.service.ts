@@ -1,21 +1,21 @@
 import { desc, eq, sql } from 'drizzle-orm';
-import { db } from '../db/init.js';
-import { gameEmbeddings, userEmbeddings } from '../drizzle/schema.js';
-import { gameService } from './game.service.js';
-import { reviewService } from './review.service.js';
-import { logger } from '../utils/logger.js';
+import { model, openAiClient } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { recentlyPlayedEndpoint } from '../clients/steam/endpoints/userContext/recentlyPlayed.endpoint.js';
+import { db } from '../db/init.js';
+import { gameEmbeddings, userEmbeddings } from '../drizzle/schema.js';
 import {
-  trimText,
-  l2Normalize,
-  weightedMean,
-  uniqueLimited,
   buildUserPreferenceText,
+  l2Normalize,
   meanOrZero,
+  trimText,
+  uniqueLimited,
+  weightedMean,
 } from '../utils/embedding.helpers.js';
+import { logger } from '../utils/logger.js';
+import { gameService } from './game.service.js';
+import { reviewService } from './review.service.js';
 import { userService } from './user.service.js';
-import { openAiClient, model } from '../clients/openai/index.js';
 
 export const LIMITS = {
   MAX_REVIEW_CHARS: 2000, // ~500 tokenów
@@ -144,7 +144,7 @@ export const embeddingService = {
         weightedMean([
           { vec: descriptionVec, weight: 0.4 },
           { vec: positiveVec, weight: 0.3 },
-          { vec: negativeVec, weight: 0.15 },
+          { vec: negativeVec, weight: -0.05 }, // acts like a repulsion, not attraction
           { vec: taxonomyVec, weight: 0.15 },
         ]),
       );
