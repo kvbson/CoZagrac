@@ -9,6 +9,7 @@ import {
   chunkReviews,
   l2Normalize,
   meanOrZero,
+  toPgVector,
   trimText,
   uniqueLimited,
   weightedMean,
@@ -19,6 +20,7 @@ import { reviewService } from './review.service.js';
 import { userService } from './user.service.js';
 
 export const LIMITS = {
+  MIN_REVIEW_CHARS: 200,
   MAX_REVIEW_CHARS: 2000, // ~500 tokenów
   MAX_POSITIVE_REVIEWS: 50,
   MAX_NEGATIVE_REVIEWS: 30,
@@ -31,7 +33,7 @@ export const USER_LIMITS = {
   MAX_CATEGORIES: 50,
 };
 
-const ACTIVE_EMBEDDING_VERSION = 'v1';
+export const ACTIVE_EMBEDDING_VERSION = 'v1';
 
 export const embeddingService = {
   game: {
@@ -48,7 +50,10 @@ export const embeddingService = {
         logger.error(`Game not found: ${steamAppId}`);
         return;
       }
-
+      if (reviews.positive.length === 0 && reviews.negative.length === 0) {
+        logger.warn('[GAME_EMBEDDINGS][SKIP]', { steamAppId, reason: 'No reviews available' });
+        return;
+      }
       /**
        * 1. Prepare review texts
        */
@@ -251,20 +256,18 @@ export const embeddingService = {
      */
     async findSimilar(embedding: number[], limit = 10) {
       const safeLimit = Math.min(limit, 50);
+      const vectorSql = toPgVector(embedding);
 
+      const similarityExpr = sql<number>`
+  1 - (${gameEmbeddings.embedding} <=> ${vectorSql}::vector)
+`;
       return db
         .select({
           steamAppid: gameEmbeddings.steamAppid,
-          similarity: sql<number>`
-            1 - (${gameEmbeddings.embedding} <=> ${embedding})
-          `,
+          similarity: similarityExpr,
         })
         .from(gameEmbeddings)
-        .orderBy(
-          desc(sql`
-            1 - (${gameEmbeddings.embedding} <=> ${embedding})
-          `),
-        )
+        .orderBy(desc(similarityExpr))
         .limit(safeLimit);
     },
 

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import util from 'util';
 
 const LOG_DIR = path.resolve(process.cwd(), 'logs');
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
@@ -29,6 +30,15 @@ function basePayload(type: LogTypes, msg: string) {
   };
 }
 
+function prettyCtx(ctx?: unknown) {
+  if (!ctx) return '';
+  return util.inspect(ctx, {
+    depth: null,
+    colors: true,
+    compact: false,
+  });
+}
+
 function consoleOut(type: LogTypes, msg: string, ctx?: unknown) {
   if (NODE_ENV === 'production') return;
 
@@ -41,7 +51,14 @@ function consoleOut(type: LogTypes, msg: string, ctx?: unknown) {
           ? console.debug
           : console.log;
 
-  fn(msg, ctx ?? '');
+  if (ctx) {
+    fn('─'.repeat(60));
+    fn(msg);
+    fn(prettyCtx(ctx));
+    fn('─'.repeat(60));
+  } else {
+    fn(msg);
+  }
 }
 
 function serializeError(err?: unknown) {

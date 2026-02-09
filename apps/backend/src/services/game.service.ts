@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and, isNull } from 'drizzle-orm';
 import { db } from '../db/init.js';
 import {
   gameInfo,
@@ -9,10 +9,12 @@ import {
   gameScreenshots,
   gameGenres,
   gameCategories,
+  gameEmbeddings,
 } from '../drizzle/schema.js';
 import { CreateGameInput } from '../schemas/game.zod.js';
 import { Tx } from '../types/db.types.js';
 import { GameInfoResult, GamePayload } from '../types/game.types.js';
+import { ACTIVE_EMBEDDING_VERSION } from './embeddings.service.js';
 
 export const gameService = {
   /**
@@ -48,79 +50,91 @@ export const gameService = {
     return rows.map((r) => r.steamAppid);
   },
 
-  async getByAppId(appId: number): Promise<GameInfoResult | null> {
-    //TODO: maybe separate into diff queries later instead of left joins (zobacz ktore schematy maja najwiecej danych dla danej gry i je rozdziel)
+  async getIdsWithoutEmbeddings() {
+    const rows = await db
+      .select({ steamAppid: gameInfo.steamAppid })
+      .from(gameInfo)
+      .leftJoin(
+        gameEmbeddings,
+        and(
+          eq(gameEmbeddings.steamAppid, gameInfo.steamAppid),
+          eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION),
+        ),
+      )
+      .where(isNull(gameEmbeddings.steamAppid));
+
+    return rows.map((r) => r.steamAppid);
+  },
+
+  async getGameBaseInfo(appId: number) {
+    const [row] = await db.select().from(gameInfo).where(eq(gameInfo.steamAppid, appId)).limit(1);
+
+    return row ?? null;
+  },
+
+  async getGameGenres(appId: number) {
     const rows = await db
       .select({
-        game: gameInfo,
-        shortDescription: gameInfo.shortDescription,
-        aboutTheGame: gameInfo.aboutTheGame,
-        releaseDate: gameInfo.releaseDate,
-        genre: genres,
-        category: categories,
-        movie: gameMovies,
-        publisher: gamePublishers,
-        screenshot: gameScreenshots,
+        id: genres.id,
+        name: genres.name,
       })
-      .from(gameInfo)
-      .leftJoin(gameGenres, eq(gameGenres.steamAppid, gameInfo.steamAppid))
-      .leftJoin(genres, eq(genres.id, gameGenres.genreId))
-      .leftJoin(gameCategories, eq(gameCategories.steamAppid, gameInfo.steamAppid))
-      .leftJoin(categories, eq(categories.id, gameCategories.categoryId))
-      .leftJoin(gameMovies, eq(gameMovies.steamAppid, gameInfo.steamAppid))
-      .leftJoin(gamePublishers, eq(gamePublishers.steamAppid, gameInfo.steamAppid))
-      .leftJoin(gameScreenshots, eq(gameScreenshots.steamAppid, gameInfo.steamAppid))
-      .where(eq(gameInfo.steamAppid, appId));
+      .from(gameGenres)
+      .innerJoin(genres, eq(genres.id, gameGenres.genreId))
+      .where(eq(gameGenres.steamAppid, appId));
+    return rows.filter((el) => el.name !== null) as {
+      id: string;
+      name: string;
+    }[];
+  },
 
-    if (!rows.length) return null;
+  async getGameCategories(appId: number) {
+    const rows = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+      })
+      .from(gameCategories)
+      .innerJoin(categories, eq(categories.id, gameCategories.categoryId))
+      .where(eq(gameCategories.steamAppid, appId));
+    return rows.filter((el) => el.name !== null) as {
+      id: string;
+      name: string;
+    }[];
+  },
 
-    const base = rows[0].game;
-    if (!base.name) return null;
+  async getGameMovies(appId: number) {
+    return db.select().from(gameMovies).where(eq(gameMovies.steamAppid, appId));
+  },
+
+  async getGamePublishers(appId: number) {
+    return db.select().from(gamePublishers).where(eq(gamePublishers.steamAppid, appId));
+  },
+
+  async getGameScreenshots(appId: number) {
+    return db.select().from(gameScreenshots).where(eq(gameScreenshots.steamAppid, appId));
+  },
+
+  async getByAppId(appId: number): Promise<GameInfoResult | null> {
+    const base = await this.getGameBaseInfo(appId);
+    if (!base || !base.name) return null;
+
+    const [genres, categories, movies, publishers, screenshots] = await Promise.all([
+      this.getGameGenres(appId),
+      this.getGameCategories(appId),
+      this.getGameMovies(appId),
+      this.getGamePublishers(appId),
+      this.getGameScreenshots(appId),
+    ]);
 
     const result: GameInfoResult = {
       ...base,
       name: base.name,
-      genres: [],
-      categories: [],
-      movies: [],
-      publishers: [],
-      screenshots: [],
+      genres,
+      categories,
+      movies,
+      publishers,
+      screenshots,
     };
-
-    const seen = {
-      genres: new Set<string>(),
-      categories: new Set<string>(),
-      movies: new Set<number>(),
-      publishers: new Set<number>(),
-      screenshots: new Set<number>(),
-    };
-
-    for (const { category, genre, movie, publisher, screenshot } of rows) {
-      if (genre?.name && !seen.genres.has(genre.id)) {
-        seen.genres.add(genre.id);
-        result.genres.push({ id: genre.id, name: genre.name });
-      }
-
-      if (category?.name && !seen.categories.has(category.id)) {
-        seen.categories.add(category.id);
-        result.categories.push({ id: category.id, name: category.name });
-      }
-
-      if (movie && !seen.movies.has(movie.movieId)) {
-        seen.movies.add(movie.movieId);
-        result.movies.push(movie);
-      }
-
-      if (publisher && !seen.publishers.has(publisher.publisherId)) {
-        seen.publishers.add(publisher.publisherId);
-        result.publishers.push(publisher);
-      }
-
-      if (screenshot && !seen.screenshots.has(screenshot.screenshotId)) {
-        seen.screenshots.add(screenshot.screenshotId);
-        result.screenshots.push(screenshot);
-      }
-    }
 
     return result;
   },

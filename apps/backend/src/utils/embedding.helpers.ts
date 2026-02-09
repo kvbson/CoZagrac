@@ -95,3 +95,7 @@ export function chunkReviews(reviews: string[], chunkSize = 5): string[] {
 
   return chunks;
 }
+
+export function toPgVector(vec: number[]): string {
+  return `[${vec.join(',')}]`;
+}

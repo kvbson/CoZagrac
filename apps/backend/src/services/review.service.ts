@@ -5,6 +5,7 @@ import { gameReviews } from '../drizzle/schema.js';
 import { Tx } from '../types/db.types.js';
 import { CreateReviewInput } from '../schemas/review.zod.js';
 import { LIMITS } from './embeddings.service.js';
+import { logger } from '../utils/logger.js';
 
 export type SyncResult = {
   savedPositive: number;
@@ -108,12 +109,12 @@ export const reviewService = {
     positive: string[];
     negative: string[];
   }> {
-    const { MAX_NEGATIVE_REVIEWS, MAX_POSITIVE_REVIEWS, MAX_REVIEW_CHARS } = LIMITS;
+    const { MAX_NEGATIVE_REVIEWS, MAX_POSITIVE_REVIEWS, MIN_REVIEW_CHARS } = LIMITS;
 
     const baseWhere = and(
       eq(gameReviews.steamAppid, steamAppid),
       sql`${gameReviews.review} IS NOT NULL`,
-      sql`length(${gameReviews.review}) >= ${MAX_REVIEW_CHARS}`,
+      sql`length(${gameReviews.review}) >= ${MIN_REVIEW_CHARS}`,
     );
 
     const [positive, negative] = await Promise.all([
@@ -131,7 +132,12 @@ export const reviewService = {
         .orderBy(desc(gameReviews.weightedVoteScore), desc(gameReviews.reviewCreated))
         .limit(MAX_NEGATIVE_REVIEWS),
     ]);
-
+    logger.debug('[REVIEWS][FILTER]', {
+      steamAppid,
+      minChars: LIMITS.MIN_REVIEW_CHARS,
+      positiveSelected: positive.length,
+      negativeSelected: negative.length,
+    });
     return {
       positive: positive.map((r) => r.review).filter(Boolean) as string[],
       negative: negative.map((r) => r.review).filter(Boolean) as string[],
