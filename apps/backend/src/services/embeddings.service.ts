@@ -293,7 +293,8 @@ export const embeddingService = {
      * Generate and save user embeddings
      */
     async generateUserEmbedding(id: string) {
-      const { steamId } = await userService.getById(id);
+      const user = await userService.getById(id);
+      const steamId = user?.steamId;
       if (!steamId) {
         logger.error('[USER_EMBEDDING] user misses steamId - connect steam account first.');
         return;

@@ -56,7 +56,7 @@ export type UpdateUserParams = z.infer<typeof updateUserHttpSchema>['params'];
 export type UpdateUserBody = z.infer<typeof updateUserHttpSchema>['body'];
 
 // get
-export const getUserQueryHttpSchema = z
+export const getUserQuerySchema = z
   .object({
     id: z.uuid().optional(),
     email: z.email().optional(),
@@ -66,16 +66,20 @@ export const getUserQueryHttpSchema = z
     error: 'Provide exactly one of: id, email, steamId',
   });
 
-export type GetUserQuery = z.infer<typeof getUserQueryHttpSchema>;
+export const getUserHttpSchema = z.object({
+  query: getUserQuerySchema,
+});
+
+export type GetUserQuery = z.infer<typeof getUserQuerySchema>;
 
 // delete
 export const deleteUserHttpSchema = z
   .object({
     params: z.object({
-      id: z.uuid(),
+      userId: z.uuid(),
     }),
   })
-  .refine((data) => data.params.id, { error: 'User id is required for deleting.' });
+  .refine((data) => data.params.userId, { error: 'User id is required for deleting.' });
 
 export type DeleteUserParams = z.infer<typeof deleteUserHttpSchema>['params'];
 

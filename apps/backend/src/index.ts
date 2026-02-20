@@ -1,4 +1,5 @@
 import './env.js';
+import './auth/steam.js';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -7,11 +8,9 @@ import { pool } from './db/init.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
 import { pgSession } from './db/sessions/index.js';
 import passport from 'passport';
+import { domain, isDev, PORT } from './config/runtime.js';
 
-export const isDev = process.env.NODE_ENV === 'development';
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
-export const domain = isDev ? `http://localhost:${PORT}` : 'https://co-zagrac.pl';
 
 // Server configuration
 app.use(express.json());

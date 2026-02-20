@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as SteamStrategy } from 'passport-steam';
 import { userService } from '../services/user.service.js';
-import { domain } from '../index.js';
+import { domain } from '../config/runtime.js';
 
 /* ========================
    Serialize / Deserialize

@@ -39,7 +39,7 @@ export const updateUser = async (
 ========================= */
 
 export const deleteUser = async (req: Request<DeleteUserParams>, res: Response) => {
-  const deleted = await userService.delete(req.params.id);
+  const deleted = await userService.delete(req.params.userId);
 
   if (!deleted) {
     return res.sendStatus(404);

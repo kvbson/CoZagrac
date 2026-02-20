@@ -11,8 +11,8 @@ export const getGameReviews = async (req: Request, res: Response) => {
   const result = await reviewService.getByGame(steamAppid, page, limit, sort);
 
   if (!result || !result.items.length) {
-    res.sendStatus(404);
+    return res.sendStatus(404);
   }
 
-  res.status(200).json(result);
+  return res.status(200).json(result);
 };

@@ -1,6 +1,6 @@
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import { isDev } from '../../index.js';
+import { isDev } from '../../config/runtime.js';
 import { pool } from '../init.js';
 
 const PgStore = connectPgSimple(session);

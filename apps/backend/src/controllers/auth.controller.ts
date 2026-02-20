@@ -35,7 +35,7 @@ export const register = async (req: Request<object, object, LoginUserInput>, res
 export const login = async (req: Request<object, object, LoginUserInput>, res: Response) => {
   const { email, password } = req.body;
 
-  const user = await userService.getByEmail(email);
+  const user = await userService.getAuthByEmail(email);
 
   if (!user || !user.passwordHash) {
     return res.status(401).json({ message: 'Invalid credentials' });
