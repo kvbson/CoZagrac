@@ -1,5 +1,21 @@
 import { relations } from "drizzle-orm/relations";
-import { gameInfo, gameEmbeddings, users, userEmbeddings, sessions, gameGenres, genres, userGenres, userCategories, categories, userTags, tags, gameCategories, gamePublishers, gameScreenshots, gameMovies, gameReviews } from "./schema";
+import { users, userProviders, gameInfo, gameEmbeddings, userEmbeddings, sessions, gameGenres, genres, userGenres, userCategories, categories, userTags, tags, gameCategories, gamePublishers, gameScreenshots, gameMovies, gameReviews } from "./schema";
+
+export const userProvidersRelations = relations(userProviders, ({one}) => ({
+	user: one(users, {
+		fields: [userProviders.userId],
+		references: [users.id]
+	}),
+}));
+
+export const usersRelations = relations(users, ({many}) => ({
+	userProviders: many(userProviders),
+	userEmbeddings: many(userEmbeddings),
+	sessions: many(sessions),
+	userGenres: many(userGenres),
+	userCategories: many(userCategories),
+	userTags: many(userTags),
+}));
 
 export const gameEmbeddingsRelations = relations(gameEmbeddings, ({one}) => ({
 	gameInfo: one(gameInfo, {
@@ -23,14 +39,6 @@ export const userEmbeddingsRelations = relations(userEmbeddings, ({one}) => ({
 		fields: [userEmbeddings.userId],
 		references: [users.id]
 	}),
-}));
-
-export const usersRelations = relations(users, ({many}) => ({
-	userEmbeddings: many(userEmbeddings),
-	sessions: many(sessions),
-	userGenres: many(userGenres),
-	userCategories: many(userCategories),
-	userTags: many(userTags),
 }));
 
 export const sessionsRelations = relations(sessions, ({one}) => ({

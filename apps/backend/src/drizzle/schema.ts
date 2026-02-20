@@ -4,10 +4,10 @@ import {
   uuid,
   integer,
   varchar,
-  index,
   foreignKey,
-  vector,
   timestamp,
+  index,
+  vector,
   jsonb,
   text,
   boolean,
@@ -28,6 +28,26 @@ export const genres = pgTable(
   (table) => [
     unique('uq_genres_steam_genre_id').on(table.steamGenreId),
     unique('genres_name_key').on(table.name),
+  ],
+);
+
+export const userProviders = pgTable(
+  'user_providers',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid('user_id').notNull(),
+    provider: varchar().notNull(),
+    providerUserId: varchar('provider_user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_providers_user_id_fkey',
+    }).onDelete('cascade'),
   ],
 );
 
@@ -106,17 +126,13 @@ export const userEmbeddings = pgTable(
   ],
 );
 
-export const users = pgTable(
-  'users',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    steamId: varchar('steam_id'),
-    email: varchar(),
-    passwordHash: varchar('password_hash'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-  },
-  (table) => [unique('users_steam_id_key').on(table.steamId)],
-);
+export const users = pgTable('users', {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  email: varchar(),
+  passwordHash: varchar('password_hash'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
 
 export const tags = pgTable(
   'tags',

@@ -9,6 +9,14 @@ CREATE TABLE "genres" (
 	CONSTRAINT "genres_name_key" UNIQUE("name")
 );
 --> statement-breakpoint
+CREATE TABLE "user_providers" (
+	"id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"provider" varchar NOT NULL,
+	"provider_user_id" varchar NOT NULL,
+	"created_at" timestamp with time zone NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "game_embeddings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"steam_appid" integer NOT NULL,
@@ -37,11 +45,10 @@ CREATE TABLE "user_embeddings" (
 --> statement-breakpoint
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"steam_id" varchar,
 	"email" varchar,
 	"password_hash" varchar,
 	"created_at" timestamp with time zone DEFAULT now(),
-	CONSTRAINT "users_steam_id_key" UNIQUE("steam_id")
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tags" (
@@ -164,6 +171,7 @@ CREATE TABLE "game_reviews" (
 	CONSTRAINT "game_reviews_pkey" PRIMARY KEY("steam_appid","recommendation_id")
 );
 --> statement-breakpoint
+ALTER TABLE "user_providers" ADD CONSTRAINT "user_providers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "game_embeddings" ADD CONSTRAINT "game_embeddings_steam_appid_fkey" FOREIGN KEY ("steam_appid") REFERENCES "public"."game_info"("steam_appid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_embeddings" ADD CONSTRAINT "user_embeddings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

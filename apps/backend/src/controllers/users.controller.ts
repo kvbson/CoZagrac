@@ -8,10 +8,18 @@ import {
 } from '../schemas/user.zod.js';
 import { userService } from '../services/user.service.js';
 
+/* =========================
+   CREATE
+========================= */
+
 export const createUser = async (req: Request<object, object, CreateUserInput>, res: Response) => {
   const user = await userService.create(req.body);
-  res.status(201).json(user);
+  return res.status(201).json(user);
 };
+
+/* =========================
+   UPDATE
+========================= */
 
 export const updateUser = async (
   req: Request<UpdateUserParams, object, UpdateUserBody>,
@@ -19,12 +27,16 @@ export const updateUser = async (
 ) => {
   const user = await userService.update(req.params.userId, req.body);
 
-  if (!user.userId) {
+  if (!user) {
     return res.sendStatus(404);
   }
 
-  res.status(201).json(user);
+  return res.status(200).json(user);
 };
+
+/* =========================
+   DELETE
+========================= */
 
 export const deleteUser = async (req: Request<DeleteUserParams>, res: Response) => {
   const deleted = await userService.delete(req.params.id);
@@ -33,8 +45,12 @@ export const deleteUser = async (req: Request<DeleteUserParams>, res: Response) 
     return res.sendStatus(404);
   }
 
-  res.sendStatus(200);
+  return res.sendStatus(204);
 };
+
+/* =========================
+   GET
+========================= */
 
 export const getUser = async (
   req: Request<object, object, object, GetUserQuery>,
@@ -42,15 +58,21 @@ export const getUser = async (
 ) => {
   const { id, email, steamId } = req.query;
 
-  const user = id
-    ? await userService.getById(id)
-    : email
-      ? await userService.getByEmail(email)
-      : await userService.getBySteamId(steamId!);
+  let user = null;
 
-  if (!user.userId) {
+  if (id) {
+    user = await userService.getById(id);
+  } else if (email) {
+    user = await userService.getByEmail(email);
+  } else if (steamId) {
+    user = await userService.getBySteamId(steamId);
+  } else {
+    return res.status(400).json({ message: 'Missing query parameter' });
+  }
+
+  if (!user) {
     return res.sendStatus(404);
   }
 
-  res.status(200).json(user);
+  return res.status(200).json(user);
 };

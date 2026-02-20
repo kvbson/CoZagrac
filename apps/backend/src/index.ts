@@ -1,14 +1,17 @@
 import './env.js';
 import express from 'express';
 import helmet from 'helmet';
+import cors from 'cors';
 import mainRouter from './routes/index.js';
 import { pool } from './db/init.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
-import { embeddingService } from './services/embeddings.service.js';
+import { pgSession } from './db/sessions/index.js';
+import passport from 'passport';
 
+export const isDev = process.env.NODE_ENV === 'development';
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
-const isDev = process.env.NODE_ENV === 'development';
+export const domain = isDev ? `http://localhost:${PORT}` : 'https://co-zagrac.pl';
 
 // Server configuration
 app.use(express.json());
@@ -20,6 +23,20 @@ app.use(
     },
   }),
 );
+
+if (!isDev) {
+  app.use(
+    cors({
+      origin: domain,
+      credentials: true,
+    }),
+  );
+}
+
+app.use(pgSession);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.get('/health', (_req, res) => {
@@ -37,7 +54,6 @@ async function startServer() {
   try {
     await checkDbConnection();
     console.log('Database connection successful.');
-    console.log(await embeddingService.game.findSimilarToGame(33230));
   } catch (err) {
     console.error('Database connection failed:', err);
     process.exit(1);

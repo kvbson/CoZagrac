@@ -1,14 +1,14 @@
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { users } from '../drizzle/schema.js';
+import { userProviders, users } from '../drizzle/schema.js';
 
 // insert
 const insertUserSchema = createInsertSchema(users);
+const insertProviderSchema = createInsertSchema(userProviders);
 
 export const createUserHttpSchema = z.object({
   body: insertUserSchema
     .pick({
-      steamId: true,
       email: true,
       passwordHash: true,
     })
@@ -19,15 +19,28 @@ export const createUserHttpSchema = z.object({
 
 export type CreateUserInput = z.infer<typeof createUserHttpSchema>['body'];
 
+export const createProviderHttpSchema = z.object({
+  body: insertProviderSchema
+    .pick({
+      provider: true,
+      providerUserId: true,
+      userId: true,
+    })
+    .refine((data) => data.provider || data.providerUserId || data.userId, {
+      error: 'Provider and provider userId are required.',
+    }),
+});
+
+export type CreateProviderInput = z.infer<typeof createProviderHttpSchema>['body'];
+
 // update
-const updateUserBodySchema = createInsertSchema(users)
+const updateUserBodySchema = insertUserSchema
   .partial()
   .pick({
-    steamId: true,
     email: true,
     passwordHash: true,
   })
-  .refine((data) => data.email || data.passwordHash || data.steamId, {
+  .refine((data) => data.email || data.passwordHash, {
     error: 'At least one info must be passed to update',
   });
 
@@ -70,3 +83,17 @@ export type DeleteUserParams = z.infer<typeof deleteUserHttpSchema>['params'];
 export const publicUserSchema = createSelectSchema(users).omit({
   passwordHash: true,
 });
+
+// login
+export const loginUserHttpSchema = z
+  .object({
+    body: z.object({
+      email: z.email().nonoptional(),
+      password: z.string().nonoptional(),
+    }),
+  })
+  .refine((data) => data.body.email || data.body.password, {
+    error: 'Email and password are required for login.',
+  });
+
+export type LoginUserInput = z.infer<typeof loginUserHttpSchema>['body'];

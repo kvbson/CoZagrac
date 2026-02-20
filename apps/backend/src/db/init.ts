@@ -1,6 +1,7 @@
 import * as schema from '../drizzle/schema.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { isDev } from '../index.js';
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,7 +18,7 @@ export const pool = new Pool({
   // utrzymaj połączenie przy życiu
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
-  ssl: false,
+  ssl: !isDev,
 });
 
 export const db = drizzle(pool, { schema });

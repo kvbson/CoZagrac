@@ -13,14 +13,45 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- =========================
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_id varchar UNIQUE,
-  email varchar,
+
+  email varchar UNIQUE,
   password_hash varchar,
-  created_at timestamptz DEFAULT now()
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON COLUMN users.steam_id
-IS 'nullable - user may connect Steam later';
+COMMENT ON COLUMN users.email
+IS 'nullable - required only for local auth';
+
+COMMENT ON COLUMN users.password_hash
+IS 'nullable - required only for local auth';
+
+CREATE TABLE user_providers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  user_id uuid NOT NULL
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  provider varchar NOT NULL,
+
+  provider_user_id varchar NOT NULL,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT user_providers_provider_unique
+    UNIQUE (provider, provider_user_id)
+);
+
+COMMENT ON TABLE user_providers
+IS 'External authentication providers like steam, google etc';
+
+COMMENT ON COLUMN user_providers.provider
+IS 'e.g. steam';
+
+COMMENT ON COLUMN user_providers.provider_user_id
+IS 'e.g. steamId';
 
 -- =========================
 -- GAME INFO
