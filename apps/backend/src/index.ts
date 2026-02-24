@@ -84,6 +84,12 @@ async function startServer() {
 
 const onSuccess = () => {
   console.log('Backend running on http://localhost:3001');
+  // console.log(
+  //   await embeddingService.user.recommendGames(
+  //     'd4f4d515-490b-47ff-9529-95720cbb2d08',
+  //     // '76561198271038475',
+  //   ),
+  // );
 };
 
 startServer().catch((err) => {

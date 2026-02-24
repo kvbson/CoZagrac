@@ -1,23 +1,19 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { model, openAiClient } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
-import { recentlyPlayedEndpoint } from '../clients/steam/endpoints/userContext/recentlyPlayed.endpoint.js';
 import { db } from '../db/init.js';
-import { gameEmbeddings, userEmbeddings } from '../drizzle/schema.js';
+import { gameEmbeddings, gameInfo, userEmbeddings, userProviders } from '../drizzle/schema.js';
 import {
-  buildUserPreferenceText,
   chunkReviews,
   l2Normalize,
   meanOrZero,
   toPgVector,
   trimText,
-  uniqueLimited,
   weightedMean,
 } from '../utils/embedding.helpers.js';
 import { logger } from '../utils/logger.js';
 import { gameService } from './game.service.js';
 import { reviewService } from './review.service.js';
-import { userService } from './user.service.js';
 
 export const LIMITS = {
   MIN_REVIEW_CHARS: 200,
@@ -292,212 +288,343 @@ export const embeddingService = {
     /**
      * Generate and save user embeddings
      */
-    async generateUserEmbedding(id: string) {
-      const user = await userService.getById(id);
-      const steamId = user?.steamId;
+    // async generateUserEmbedding(id: string, steamId?: string) {
+    //   if (!steamId) {
+    //     const user = await userService.getById(id);
+    //     const sId = user?.steamId;
+    //     if (!sId) {
+    //       logger.error('[USER_EMBEDDING] user misses steamId - connect steam account first.');
+    //       return;
+    //     }
+    //     steamId = sId;
+    //   }
+
+    //   const [{ response: owned }, { response: recent }] = await Promise.all([
+    //     ownedGamesEndpoint.getData(steamId),
+    //     recentlyPlayedEndpoint.getData(steamId),
+    //   ]);
+
+    //   const ownedGames = owned?.games ?? [];
+    //   const recentGames = recent?.games ?? [];
+
+    //   if (!ownedGames.length) {
+    //     TODO: if no game info about we can get info and generate embedding
+    //     logger.warn('[USER_EMBEDDING] No owned games – cannot generate embedding.');
+    //     return;
+    //   }
+
+    //   const topGames = [...ownedGames]
+    //     .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
+    //     .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
+
+    //   /**
+    //    * 1. Load game infos
+    //    */
+    //   let gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
+    //   let counter = 0;
+    //   gameInfos = gameInfos.map((info) => {
+    //     if (!info) counter++;
+    //     return info;
+    //   });
+    //   if (counter > 0) {
+    //     logger.warn(
+    //       `[USER_EMBEDDING] Missing game info for ${counter} owned games – they will be skipped.`,
+    //     );
+    //   }
+    //   gameInfos = gameInfos.filter((g): g is NonNullable<typeof g> => !!g);
+    //   /**
+    //    * 2. Aggregate genres & categories
+    //    */
+    //   const genres = uniqueLimited(
+    //     gameInfos.flatMap((g) => g?.genres ?? []),
+    //     USER_LIMITS.MAX_GENRES,
+    //     (g) => g.id,
+    //   ).map((g) => g.name);
+
+    //   const categories = uniqueLimited(
+    //     gameInfos.flatMap((g) => g?.categories ?? []),
+    //     USER_LIMITS.MAX_CATEGORIES,
+    //     (c) => c.id,
+    //   ).map((c) => c.name);
+
+    //   /**
+    //    * 3. Playstyle inference
+    //    */
+    //   const playstyleSignals: string[] = [];
+
+    //   const totalPlaytime = ownedGames.reduce((a, g) => a + (g.playtime_forever ?? 0), 0) / 60;
+
+    //   const recentPlaytime = recentGames.length
+    //     ? recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60
+    //     : 0;
+
+    //   if (recentPlaytime > 20) playstyleSignals.push('plays very frequently');
+    //   if (recentPlaytime < 2) playstyleSignals.push('plays occasionally');
+    //   if (totalPlaytime > 1000) playstyleSignals.push('hardcore gamer');
+
+    //   /**
+    //    * 4. CORE preference text (high signal)
+    //    */
+    //   const activitySummary = `
+    //       The user has played games for approximately ${Math.round(totalPlaytime)} hours in total
+    //       and played about ${Math.round(recentPlaytime)} hours in the last two weeks.
+    //   `.trim();
+    //   const preferenceText = [
+    //     buildUserPreferenceText({
+    //       genres,
+    //       categories,
+    //       topGames: topGames.map((g) => g.name).filter(Boolean),
+    //       playstyle: playstyleSignals,
+    //     }),
+    //     activitySummary,
+    //   ].join('\n\n');
+    //   /**
+    //    * 5. Games played text (simple, stable)
+    //    */
+    //   const gamesText = `
+    //         Games frequently played by the user:
+    //         ${topGames.map((g) => `- ${g.name}`).join('\n')}
+    //   `.trim();
+    //   logger.debug('[USER_EMBEDDINGS][INPUT]', {
+    //     userId: id,
+    //     ownedGames: ownedGames.length,
+    //     topGames: topGames.length,
+    //     genres: genres.length,
+    //     categories: categories.length,
+    //     playstyleSignals,
+    //     totalPlaytime: Math.round(totalPlaytime),
+    //     recentPlaytime: Math.round(recentPlaytime),
+    //   });
+    //   /**
+    //    * 6. Embeddings
+    //    */
+    //   const [preferenceRes, gamesRes] = await Promise.all([
+    //     openAiClient.embeddings.create({
+    //       model,
+    //       input: preferenceText,
+    //     }),
+
+    //     openAiClient.embeddings.create({
+    //       model,
+    //       input: gamesText,
+    //     }),
+    //   ]);
+
+    //   const preferenceVec = preferenceRes.data[0].embedding;
+    //   const gamesVec = gamesRes.data[0].embedding;
+
+    //   /**
+    //    * 7. Final user embedding
+    //    */
+    //   const finalEmbedding = l2Normalize(
+    //     weightedMean([
+    //       { vec: preferenceVec, weight: 0.7 },
+    //       { vec: gamesVec, weight: 0.3 },
+    //     ]),
+    //   );
+    //   logger.debug('[USER_EMBEDDINGS][VECTOR]', {
+    //     userId: id,
+    //     dimension: finalEmbedding.length,
+    //     normApprox: Math.sqrt(finalEmbedding.reduce((a, v) => a + v * v, 0)).toFixed(4),
+    //   });
+    //   /**
+    //    * 8. Persist
+    //    */
+    //   await db.transaction(async (tx) => {
+    //     await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, id));
+    //     await tx.insert(userEmbeddings).values({
+    //       userId: id,
+    //       embedding: finalEmbedding,
+    //       modelName: model,
+    //       embeddingVersion: ACTIVE_EMBEDDING_VERSION,
+    //     });
+    //   });
+    //   logger.info('[USER_EMBEDDINGS][SUMMARY]', {
+    //     userId: id,
+    //     embeddingVersion: ACTIVE_EMBEDDING_VERSION,
+    //     topGames: topGames.slice(0, 5).map((g) => g.name),
+    //     genres: genres.slice(0, 5),
+    //   });
+    //   return finalEmbedding;
+    // },
+    async generateUserEmbedding(userId: string) {
+      const [{ steamId }] = await db
+        .select({ steamId: userProviders.providerUserId })
+        .from(userProviders)
+        .where(eq(userProviders.userId, userId))
+        .limit(1);
+
       if (!steamId) {
-        logger.error('[USER_EMBEDDING] user misses steamId - connect steam account first.');
+        logger.error('[USER_EMBEDDING] Missing steamId');
         return;
       }
 
-      const [{ response: owned }, { response: recent }] = await Promise.all([
-        ownedGamesEndpoint.getData(steamId),
-        recentlyPlayedEndpoint.getData(steamId),
-      ]);
-
-      const ownedGames = owned?.games ?? [];
-      const recentGames = recent?.games ?? [];
+      const { response } = await ownedGamesEndpoint.getData(steamId);
+      const ownedGames = response?.games ?? [];
 
       if (!ownedGames.length) {
-        logger.warn('[USER_EMBEDDING] No owned games – cannot generate embedding.');
+        logger.warn('[USER_EMBEDDING] No owned games');
         return;
       }
-
       const topGames = [...ownedGames]
         .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
         .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
-
-      /**
-       * 1. Load game infos
-       */
       const gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
-
-      /**
-       * 2. Aggregate genres & categories
-       */
-      const genres = uniqueLimited(
-        gameInfos.flatMap((g) => g?.genres ?? []),
-        USER_LIMITS.MAX_GENRES,
-        (g) => g.id,
-      ).map((g) => g.name);
-
-      const categories = uniqueLimited(
-        gameInfos.flatMap((g) => g?.categories ?? []),
-        USER_LIMITS.MAX_CATEGORIES,
-        (c) => c.id,
-      ).map((c) => c.name);
-
-      /**
-       * 3. Playstyle inference
-       */
-      const playstyleSignals: string[] = [];
-
-      const totalPlaytime = ownedGames.reduce((a, g) => a + (g.playtime_forever ?? 0), 0) / 60;
-
-      const recentPlaytime = recentGames.length
-        ? recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60
-        : 0;
-
-      if (recentPlaytime > 20) playstyleSignals.push('plays very frequently');
-      if (recentPlaytime < 2) playstyleSignals.push('plays occasionally');
-      if (totalPlaytime > 1000) playstyleSignals.push('hardcore gamer');
-
-      /**
-       * 4. CORE preference text (high signal)
-       */
-      const activitySummary = `
-          The user has played games for approximately ${Math.round(totalPlaytime)} hours in total
-          and played about ${Math.round(recentPlaytime)} hours in the last two weeks.
-      `.trim();
-      const preferenceText = [
-        buildUserPreferenceText({
-          genres,
-          categories,
-          topGames: topGames.map((g) => g.name).filter(Boolean),
-          playstyle: playstyleSignals,
-        }),
-        activitySummary,
-      ].join('\n\n');
-      /**
-       * 5. Games played text (simple, stable)
-       */
-      const gamesText = `
-            Games frequently played by the user:
-            ${topGames.map((g) => `- ${g.name}`).join('\n')}
-      `.trim();
-      logger.debug('[USER_EMBEDDINGS][INPUT]', {
-        userId: id,
-        ownedGames: ownedGames.length,
-        topGames: topGames.length,
-        genres: genres.length,
-        categories: categories.length,
-        playstyleSignals,
-        totalPlaytime: Math.round(totalPlaytime),
-        recentPlaytime: Math.round(recentPlaytime),
+      let counter = 0;
+      gameInfos.map((info) => {
+        if (!info) counter++;
+        return info;
       });
-      /**
-       * 6. Embeddings
-       */
-      const [preferenceRes, gamesRes] = await Promise.all([
-        openAiClient.embeddings.create({
-          model,
-          input: preferenceText,
-        }),
+      if (counter > 0) {
+        logger.warn(
+          //TODO: if no game info about we can get info and generate embedding
+          `[USER_EMBEDDING] Missing game info for ${counter} owned games – they will be skipped.`,
+        );
+      }
 
-        openAiClient.embeddings.create({
-          model,
-          input: gamesText,
-        }),
-      ]);
+      const gameEmbRows = await db
+        .select({
+          embedding: gameEmbeddings.embedding,
+          steamAppid: gameEmbeddings.steamAppid,
+        })
+        .from(gameEmbeddings)
+        .where(
+          inArray(
+            gameEmbeddings.steamAppid,
+            topGames.map((g) => g.appid),
+          ),
+        );
 
-      const preferenceVec = preferenceRes.data[0].embedding;
-      const gamesVec = gamesRes.data[0].embedding;
+      if (!gameEmbRows.length) {
+        logger.warn('[USER_EMBEDDING] No game embeddings found');
+        return;
+      }
 
-      /**
-       * 7. Final user embedding
-       */
-      const finalEmbedding = l2Normalize(
-        weightedMean([
-          { vec: preferenceVec, weight: 0.7 },
-          { vec: gamesVec, weight: 0.3 },
-        ]),
-      );
-      logger.debug('[USER_EMBEDDINGS][VECTOR]', {
-        userId: id,
-        dimension: finalEmbedding.length,
-        normApprox: Math.sqrt(finalEmbedding.reduce((a, v) => a + v * v, 0)).toFixed(4),
-      });
-      /**
-       * 8. Persist
-       */
+      const vectors = gameEmbRows.map((r) => ({
+        vec: r.embedding,
+        weight: 1,
+      }));
+
+      const finalEmbedding = l2Normalize(weightedMean(vectors));
+
       await db.transaction(async (tx) => {
-        await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, id));
+        await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, userId));
+
         await tx.insert(userEmbeddings).values({
-          userId: id,
+          userId,
           embedding: finalEmbedding,
           modelName: model,
-          embeddingVersion: ACTIVE_EMBEDDING_VERSION,
+          embeddingVersion: 'v2-centroid',
         });
       });
-      logger.info('[USER_EMBEDDINGS][SUMMARY]', {
-        userId: id,
-        embeddingVersion: ACTIVE_EMBEDDING_VERSION,
-        topGames: topGames.slice(0, 5).map((g) => g.name),
-        genres: genres.slice(0, 5),
+
+      logger.info('[USER_EMBEDDING][V2]', {
+        userId,
+        basedOnGames: gameEmbRows.length,
       });
+
       return finalEmbedding;
     },
 
     /**
      * Recommend games for a user
      */
-    async recommendGames(userId: string, limit = 10) {
-      const [userRow] = await db
-        .select({ embedding: userEmbeddings.embedding })
-        .from(userEmbeddings)
-        .where(eq(userEmbeddings.userId, userId))
-        .orderBy(desc(userEmbeddings.createdAt))
+    async recommendGames(userId: string, limit = 50) {
+      const safeLimit = Math.min(limit, 100);
+
+      const [{ steamId }] = await db
+        .select({ steamId: userProviders.providerUserId })
+        .from(userProviders)
+        .where(eq(userProviders.userId, userId))
         .limit(1);
 
-      if (!userRow) return [];
+      if (!steamId) return [];
 
-      const safeLimit = Math.min(limit, 50);
+      const { response } = await ownedGamesEndpoint.getData(steamId);
+      const ownedIds = response?.games?.map((g) => g.appid) ?? [];
 
-      return db
+      const similarityExpr = sql<number>`
+    1 - (
+      ${gameEmbeddings.embedding} <=> (
+        select ${userEmbeddings.embedding}
+        from ${userEmbeddings}
+        where ${userEmbeddings.userId} = ${userId}
+        order by ${userEmbeddings.createdAt} desc
+        limit 1
+      )
+    )
+  `;
+
+      const rows = await db
         .select({
           steamAppid: gameEmbeddings.steamAppid,
-          similarity: sql<number>`
-            1 - (${gameEmbeddings.embedding} <=> ${userRow.embedding})
-          `,
+          similarity: similarityExpr,
         })
         .from(gameEmbeddings)
-        .orderBy(
-          desc(sql`
-            1 - (${gameEmbeddings.embedding} <=> ${userRow.embedding})
-          `),
+        .where(
+          ownedIds.length
+            ? sql`${gameEmbeddings.steamAppid} not in (${sql.join(
+                ownedIds.map((id) => sql`${id}`),
+                sql`,`,
+              )})`
+            : undefined,
         )
+        .orderBy(desc(similarityExpr))
         .limit(safeLimit);
+
+      if (!rows.length) return [];
+
+      const infos = await db
+        .select({
+          id: gameInfo.steamAppid,
+          name: gameInfo.name,
+        })
+        .from(gameInfo)
+        .where(
+          inArray(
+            gameInfo.steamAppid,
+            rows.map((r) => r.steamAppid),
+          ),
+        );
+
+      const infoMap = new Map(infos.map((info) => [info.id, info]));
+
+      return rows.map((row) => ({
+        id: row.steamAppid,
+        name: infoMap.get(row.steamAppid)?.name ?? 'Unknown',
+        similarity: row.similarity,
+      }));
     },
-  },
 
-  /**
-   * Recommend games for a user
-   * next cursor - last item recommended for user, we want to get next batch below the cursor
-   */
-  async recommendGamesInfinite(userEmbedding: number[], limit = 20, cursor?: { score: number }) {
-    const safeLimit = Math.min(limit, 50);
+    /**
+     * Recommend games for a user
+     * next cursor - last item recommended for user, we want to get next batch below the cursor
+     */
+    async recommendGamesInfinite(userEmbedding: number[], limit = 20, cursor?: { score: number }) {
+      const safeLimit = Math.min(limit, 50);
 
-    const similarityExpr = sql<number>`
+      const similarityExpr = sql<number>`
     1 - (${gameEmbeddings.embedding} <=> ${userEmbedding})
   `;
 
-    const whereClause = cursor ? sql`${similarityExpr} < ${cursor.score}` : undefined;
+      const whereClause = cursor ? sql`${similarityExpr} < ${cursor.score}` : undefined;
 
-    const rows = await db
-      .select({
-        steamAppid: gameEmbeddings.steamAppid,
-        score: similarityExpr,
-      })
-      .from(gameEmbeddings)
-      .where(whereClause)
-      .orderBy(desc(similarityExpr))
-      .limit(safeLimit);
+      const rows = await db
+        .select({
+          steamAppid: gameEmbeddings.steamAppid,
+          score: similarityExpr,
+        })
+        .from(gameEmbeddings)
+        .where(whereClause)
+        .orderBy(desc(similarityExpr))
+        .limit(safeLimit);
 
-    const nextCursor = rows.length > 0 ? { score: rows[rows.length - 1].score } : null;
+      const nextCursor = rows.length > 0 ? { score: rows[rows.length - 1].score } : null;
 
-    return {
-      items: rows,
-      nextCursor,
-    };
+      return {
+        items: rows,
+        nextCursor,
+      };
+    },
   },
 };
