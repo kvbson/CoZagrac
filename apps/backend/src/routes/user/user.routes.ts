@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { createUser, getUser, updateUser, deleteUser } from '../../controllers/users.controller.js';
+import {
+  createUser,
+  getUser,
+  updateUser,
+  deleteUser,
+  me,
+} from '../../controllers/users.controller.js';
 import {
   createUserHttpSchema,
   getUserHttpSchema,
@@ -34,5 +40,7 @@ router.delete(
   validate(deleteUserHttpSchema),
   deleteUser,
 );
+
+router.get('/me', requireAuth, me);
 
 export default router;

@@ -7,6 +7,7 @@ import {
   GetUserQuery,
 } from '../schemas/user.zod.js';
 import { userService } from '../services/user.service.js';
+import { getSessionUserId } from '../functions/setUserSession.js';
 
 /* =========================
    CREATE
@@ -75,4 +76,17 @@ export const getUser = async (
   }
 
   return res.status(200).json(user);
+};
+
+/* =========================
+   CHECK USER SESSION
+========================= */
+
+export const me = (req: Request, res: Response) => {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return res.sendStatus(401);
+  }
+
+  res.json({ userId });
 };
