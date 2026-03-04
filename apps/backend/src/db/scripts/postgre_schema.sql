@@ -1,5 +1,7 @@
---TODO: przejrzeć maxLengthy varcharów i dostosować przed uruchomieniem skryptu
+--TODO: przejrzeć maxLengthy varcharów
 
+BEGIN;
+SET search_path TO public;
 -- =========================
 -- EXTENSIONS
 -- =========================
@@ -11,14 +13,45 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- =========================
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_id varchar UNIQUE,
-  email varchar,
+
+  email varchar UNIQUE,
   password_hash varchar,
-  created_at timestamptz DEFAULT now()
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON COLUMN users.steam_id
-IS 'nullable - user may connect Steam later';
+COMMENT ON COLUMN users.email
+IS 'nullable - required only for local auth';
+
+COMMENT ON COLUMN users.password_hash
+IS 'nullable - required only for local auth';
+
+CREATE TABLE user_providers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  user_id uuid NOT NULL
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  provider varchar NOT NULL,
+
+  provider_user_id varchar NOT NULL,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT user_providers_provider_unique
+    UNIQUE (provider, provider_user_id)
+);
+
+COMMENT ON TABLE user_providers
+IS 'External authentication providers like steam, google etc';
+
+COMMENT ON COLUMN user_providers.provider
+IS 'e.g. steam';
+
+COMMENT ON COLUMN user_providers.provider_user_id
+IS 'e.g. steamId';
 
 -- =========================
 -- GAME INFO
@@ -44,14 +77,14 @@ CREATE TABLE IF NOT EXISTS game_info (
   app_url varchar,
 
   release_coming_soon boolean,
-  release_date date,
+  release_date text,
 
   price_currency varchar,
   price_initial integer,
   price_final integer,
   price_initial_formatted varchar,
   price_final_formatted varchar,
-  price_discount_percent varchar,
+  price_discount_percent integer,
 
   pc_minimum text,
   pc_recommended text,
@@ -72,35 +105,35 @@ CREATE TABLE IF NOT EXISTS game_reviews (
   votes_up integer,
   votes_funny integer,
   weighted_vote_score float,
+  playtime_forever integer NOT NULL DEFAULT 0,
   steam_purchase boolean,
   comment_count integer,
   review_created date,
-
+  language varchar(50),
   PRIMARY KEY (steam_appid, recommendation_id),
   FOREIGN KEY (steam_appid)
     REFERENCES game_info (steam_appid)
     ON DELETE CASCADE
 );
-
 -- =========================
 -- TAXONOMY
 -- =========================
 CREATE TABLE IF NOT EXISTS genres (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_genre_id integer,
-  name varchar UNIQUE
+  steam_genre_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_category_id integer,
-  name varchar UNIQUE
+  steam_category_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  steam_tag_id integer,
-  name varchar UNIQUE
+  steam_tag_id integer NOT NULL UNIQUE,
+  name varchar NOT NULL
 );
 
 -- =========================
@@ -177,9 +210,9 @@ CREATE TABLE IF NOT EXISTS game_publishers (
 CREATE TABLE IF NOT EXISTS game_embeddings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   steam_appid integer NOT NULL,
-  embedding vector NOT NULL,
+  embedding vector(1536) NOT NULL,
   model_name varchar,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
 
   FOREIGN KEY (steam_appid)
     REFERENCES game_info (steam_appid)
@@ -189,9 +222,9 @@ CREATE TABLE IF NOT EXISTS game_embeddings (
 CREATE TABLE IF NOT EXISTS user_embeddings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  embedding vector NOT NULL,
+  embedding vector(1536) NOT NULL,
   model_name varchar,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
 
   FOREIGN KEY (user_id)
     REFERENCES users (id)
@@ -255,8 +288,17 @@ CREATE INDEX idx_sessions_expire ON sessions (expire);
 -- =========================
 -- REVIEWS INDEXES
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_reviews_steam_appid
-  ON game_reviews (steam_appid);
+-- newest first
+CREATE INDEX idx_reviews_appid_created
+ON game_reviews (steam_appid, review_created DESC);
+
+-- best first
+CREATE INDEX idx_reviews_appid_weighted
+ON game_reviews (steam_appid, weighted_vote_score DESC);
+
+-- positive / negative
+CREATE INDEX idx_reviews_appid_voted_up
+ON game_reviews (steam_appid, voted_up);
 
 -- =========================
 -- GENRES INDEXES
@@ -291,11 +333,11 @@ CREATE INDEX IF NOT EXISTS idx_game_publishers_steam_appid
 -- =========================
 -- GAME EMBEDDINGS
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_embeddings_steam_appid
-  ON game_embeddings (steam_appid);
+CREATE INDEX IF NOT EXISTS idx_game_embeddings_appid_created
+ON game_embeddings (steam_appid, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_user_embeddings_user_id
-  ON user_embeddings (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_embeddings_user_created
+ON user_embeddings (user_id, created_at DESC);
 
 -- =========================
 -- USER PREFERENCES INDEXES
@@ -312,7 +354,7 @@ CREATE INDEX IF NOT EXISTS idx_user_tags_user_id
 -- =========================
 -- GAME INFO INDEXES
 -- =========================
-CREATE INDEX IF NOT EXISTS idx_game_info_release_date
+CREATE INDEX IF NOT EXISTS idx_game_info_release_date_text
   ON game_info (release_date);
 
 CREATE INDEX IF NOT EXISTS idx_game_info_is_free
@@ -328,6 +370,12 @@ CREATE INDEX IF NOT EXISTS idx_game_embeddings_vector
 CREATE INDEX IF NOT EXISTS idx_user_embeddings_vector
   ON user_embeddings
   USING hnsw (embedding vector_cosine_ops);
+
+CREATE INDEX IF NOT EXISTS game_embeddings_version_idx
+ON game_embeddings (embedding_version);
+
+CREATE INDEX user_embeddings_version_idx
+ON user_embeddings (embedding_version);
 
 -- =========================
 -- FULL TEXT SEARCH (GAME INFO)
@@ -377,6 +425,8 @@ SET search_vector =
 CREATE INDEX IF NOT EXISTS idx_game_info_search_vector
 ON game_info
 USING GIN (search_vector);
+
+COMMIT;
 
 -- example Text search query
 -- SELECT steam_appid, name

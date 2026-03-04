@@ -1,0 +1,1705 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.genres": {
+      "name": "genres",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "steam_genre_id": {
+          "name": "steam_genre_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_genres_steam_genre_id": {
+          "columns": [
+            "steam_genre_id"
+          ],
+          "nullsNotDistinct": false,
+          "name": "uq_genres_steam_genre_id"
+        },
+        "genres_name_key": {
+          "columns": [
+            "name"
+          ],
+          "nullsNotDistinct": false,
+          "name": "genres_name_key"
+        }
+      },
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.user_providers": {
+      "name": "user_providers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_user_id": {
+          "name": "provider_user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_providers_user_id_fkey": {
+          "name": "user_providers_user_id_fkey",
+          "tableFrom": "user_providers",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_embeddings": {
+      "name": "game_embeddings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_name": {
+          "name": "model_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "embedding_version": {
+          "name": "embedding_version",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_game_embeddings_steam_appid": {
+          "name": "idx_game_embeddings_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_embeddings_vector": {
+          "name": "idx_game_embeddings_vector",
+          "columns": [
+            {
+              "expression": "embedding",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "hnsw",
+          "with": {}
+        },
+        "idx_game_embeddings_version": {
+          "name": "idx_game_embeddings_version",
+          "columns": [
+            {
+              "expression": "embedding_version",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_embeddings_steam_appid_fkey": {
+          "name": "game_embeddings_steam_appid_fkey",
+          "tableFrom": "game_embeddings",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "steam_category_id": {
+          "name": "steam_category_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_categories_steam_category_id": {
+          "columns": [
+            "steam_category_id"
+          ],
+          "nullsNotDistinct": false,
+          "name": "uq_categories_steam_category_id"
+        },
+        "categories_name_key": {
+          "columns": [
+            "name"
+          ],
+          "nullsNotDistinct": false,
+          "name": "categories_name_key"
+        }
+      },
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.user_embeddings": {
+      "name": "user_embeddings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_name": {
+          "name": "model_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "embedding_version": {
+          "name": "embedding_version",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_user_embeddings_user_id": {
+          "name": "idx_user_embeddings_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_user_embeddings_vector": {
+          "name": "idx_user_embeddings_vector",
+          "columns": [
+            {
+              "expression": "embedding",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "hnsw",
+          "with": {}
+        },
+        "idx_user_embeddings_version": {
+          "name": "idx_user_embeddings_version",
+          "columns": [
+            {
+              "expression": "embedding_version",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_embeddings_user_id_fkey": {
+          "name": "user_embeddings_user_id_fkey",
+          "tableFrom": "user_embeddings",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.tags": {
+      "name": "tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "steam_tag_id": {
+          "name": "steam_tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_tags_steam_tag_id": {
+          "columns": [
+            "steam_tag_id"
+          ],
+          "nullsNotDistinct": false,
+          "name": "uq_tags_steam_tag_id"
+        },
+        "tags_name_key": {
+          "columns": [
+            "name"
+          ],
+          "nullsNotDistinct": false,
+          "name": "tags_name_key"
+        }
+      },
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sess": {
+          "name": "sess",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expire": {
+          "name": "expire",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_sessions_expire": {
+          "name": "idx_sessions_expire",
+          "columns": [
+            {
+              "expression": "expire",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "timestamptz_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessions_user_id_fkey": {
+          "name": "sessions_user_id_fkey",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_info": {
+      "name": "game_info",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "short_description": {
+          "name": "short_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detailed_description": {
+          "name": "detailed_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "about_the_game": {
+          "name": "about_the_game",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_free": {
+          "name": "is_free",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "required_age": {
+          "name": "required_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_windows": {
+          "name": "platform_windows",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_mac": {
+          "name": "platform_mac",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_linux": {
+          "name": "platform_linux",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "header_image": {
+          "name": "header_image",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "capsule_image": {
+          "name": "capsule_image",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "background": {
+          "name": "background",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "app_url": {
+          "name": "app_url",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "release_coming_soon": {
+          "name": "release_coming_soon",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "release_date": {
+          "name": "release_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_currency": {
+          "name": "price_currency",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_initial": {
+          "name": "price_initial",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_final": {
+          "name": "price_final",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_initial_formatted": {
+          "name": "price_initial_formatted",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_final_formatted": {
+          "name": "price_final_formatted",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_discount_percent": {
+          "name": "price_discount_percent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pc_minimum": {
+          "name": "pc_minimum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pc_recommended": {
+          "name": "pc_recommended",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mac_minimum": {
+          "name": "mac_minimum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mac_recommended": {
+          "name": "mac_recommended",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linux_minimum": {
+          "name": "linux_minimum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linux_recommended": {
+          "name": "linux_recommended",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "search_vector": {
+          "name": "search_vector",
+          "type": "tsvector",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_candidate": {
+          "name": "is_candidate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_tier": {
+          "name": "review_tier",
+          "type": "varchar(1)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_game_info_is_candidate": {
+          "name": "idx_game_info_is_candidate",
+          "columns": [
+            {
+              "expression": "is_candidate",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_info_is_free": {
+          "name": "idx_game_info_is_free",
+          "columns": [
+            {
+              "expression": "is_free",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_info_release_date": {
+          "name": "idx_game_info_release_date",
+          "columns": [
+            {
+              "expression": "release_date",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_info_search_vector": {
+          "name": "idx_game_info_search_vector",
+          "columns": [
+            {
+              "expression": "search_vector",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "tsvector_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_genres": {
+      "name": "game_genres",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "genre_id": {
+          "name": "genre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_game_genres_genre_id": {
+          "name": "idx_game_genres_genre_id",
+          "columns": [
+            {
+              "expression": "genre_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_genres_steam_appid": {
+          "name": "idx_game_genres_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_genres_steam_appid_fkey": {
+          "name": "game_genres_steam_appid_fkey",
+          "tableFrom": "game_genres",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_genres_genre_id_fkey": {
+          "name": "game_genres_genre_id_fkey",
+          "tableFrom": "game_genres",
+          "tableTo": "genres",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "genre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_genres_pkey": {
+          "name": "game_genres_pkey",
+          "columns": [
+            "steam_appid",
+            "genre_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.user_genres": {
+      "name": "user_genres",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "genre_id": {
+          "name": "genre_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_user_genres_user_id": {
+          "name": "idx_user_genres_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_genres_user_id_fkey": {
+          "name": "user_genres_user_id_fkey",
+          "tableFrom": "user_genres",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_genres_genre_id_fkey": {
+          "name": "user_genres_genre_id_fkey",
+          "tableFrom": "user_genres",
+          "tableTo": "genres",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "genre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_genres_pkey": {
+          "name": "user_genres_pkey",
+          "columns": [
+            "user_id",
+            "genre_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.user_categories": {
+      "name": "user_categories",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_user_categories_user_id": {
+          "name": "idx_user_categories_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_categories_user_id_fkey": {
+          "name": "user_categories_user_id_fkey",
+          "tableFrom": "user_categories",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_categories_category_id_fkey": {
+          "name": "user_categories_category_id_fkey",
+          "tableFrom": "user_categories",
+          "tableTo": "categories",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_categories_pkey": {
+          "name": "user_categories_pkey",
+          "columns": [
+            "user_id",
+            "category_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.user_tags": {
+      "name": "user_tags",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_user_tags_user_id": {
+          "name": "idx_user_tags_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_tags_user_id_fkey": {
+          "name": "user_tags_user_id_fkey",
+          "tableFrom": "user_tags",
+          "tableTo": "users",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_tags_tag_id_fkey": {
+          "name": "user_tags_tag_id_fkey",
+          "tableFrom": "user_tags",
+          "tableTo": "tags",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_tags_pkey": {
+          "name": "user_tags_pkey",
+          "columns": [
+            "user_id",
+            "tag_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_categories": {
+      "name": "game_categories",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_game_categories_category_id": {
+          "name": "idx_game_categories_category_id",
+          "columns": [
+            {
+              "expression": "category_id",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_game_categories_steam_appid": {
+          "name": "idx_game_categories_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_categories_steam_appid_fkey": {
+          "name": "game_categories_steam_appid_fkey",
+          "tableFrom": "game_categories",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_categories_category_id_fkey": {
+          "name": "game_categories_category_id_fkey",
+          "tableFrom": "game_categories",
+          "tableTo": "categories",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_categories_pkey": {
+          "name": "game_categories_pkey",
+          "columns": [
+            "steam_appid",
+            "category_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_publishers": {
+      "name": "game_publishers",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publisher_id": {
+          "name": "publisher_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_game_publishers_steam_appid": {
+          "name": "idx_game_publishers_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_publishers_steam_appid_fkey": {
+          "name": "game_publishers_steam_appid_fkey",
+          "tableFrom": "game_publishers",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_publishers_pkey": {
+          "name": "game_publishers_pkey",
+          "columns": [
+            "steam_appid",
+            "publisher_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_screenshots": {
+      "name": "game_screenshots",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "screenshot_id": {
+          "name": "screenshot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "path_thumbnail": {
+          "name": "path_thumbnail",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "path_full": {
+          "name": "path_full",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_game_screenshots_steam_appid": {
+          "name": "idx_game_screenshots_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_screenshots_steam_appid_fkey": {
+          "name": "game_screenshots_steam_appid_fkey",
+          "tableFrom": "game_screenshots",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_screenshots_pkey": {
+          "name": "game_screenshots_pkey",
+          "columns": [
+            "steam_appid",
+            "screenshot_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_movies": {
+      "name": "game_movies",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "movie_id": {
+          "name": "movie_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thumbnail": {
+          "name": "thumbnail",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_game_movies_steam_appid": {
+          "name": "idx_game_movies_steam_appid",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_movies_steam_appid_fkey": {
+          "name": "game_movies_steam_appid_fkey",
+          "tableFrom": "game_movies",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_movies_pkey": {
+          "name": "game_movies_pkey",
+          "columns": [
+            "steam_appid",
+            "movie_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.game_reviews": {
+      "name": "game_reviews",
+      "schema": "",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recommendation_id": {
+          "name": "recommendation_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review": {
+          "name": "review",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voted_up": {
+          "name": "voted_up",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "votes_up": {
+          "name": "votes_up",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "votes_funny": {
+          "name": "votes_funny",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weighted_vote_score": {
+          "name": "weighted_vote_score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "playtime_forever": {
+          "name": "playtime_forever",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "steam_purchase": {
+          "name": "steam_purchase",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comment_count": {
+          "name": "comment_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_created": {
+          "name": "review_created",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_reviews_appid_created": {
+          "name": "idx_reviews_appid_created",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "review_created",
+              "asc": false,
+              "nulls": "first",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_reviews_appid_voted_up": {
+          "name": "idx_reviews_appid_voted_up",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "voted_up",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "bool_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_reviews_appid_weighted": {
+          "name": "idx_reviews_appid_weighted",
+          "columns": [
+            {
+              "expression": "steam_appid",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "float8_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "weighted_vote_score",
+              "asc": false,
+              "nulls": "first",
+              "opclass": "int4_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_reviews_steam_appid_fkey": {
+          "name": "game_reviews_steam_appid_fkey",
+          "tableFrom": "game_reviews",
+          "tableTo": "game_info",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "steam_appid"
+          ],
+          "columnsTo": [
+            "steam_appid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_reviews_pkey": {
+          "name": "game_reviews_pkey",
+          "columns": [
+            "steam_appid",
+            "recommendation_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {
+    "public.genre_names_for_game_view": {
+      "name": "genre_names_for_game_view",
+      "schema": "public",
+      "columns": {
+        "steam_appid": {
+          "name": "steam_appid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "genres": {
+          "name": "genres",
+          "type": "varchar[]",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "isExisting": false,
+      "definition": "SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text",
+      "materialized": false
+    }
+  },
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "genre_names_for_game_view": {
+        "columns": {
+          "genres": {
+            "isArray": true,
+            "dimensions": 0,
+            "rawType": "character varying"
+          }
+        }
+      }
+    }
+  }
+}

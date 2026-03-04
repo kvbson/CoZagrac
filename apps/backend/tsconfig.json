@@ -10,8 +10,8 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src", "drizzle.config.ts"]
 }
