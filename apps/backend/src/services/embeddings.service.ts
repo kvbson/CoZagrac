@@ -14,6 +14,8 @@ import {
 import { logger } from '../utils/logger.js';
 import { gameService } from './game.service.js';
 import { reviewService } from './review.service.js';
+import { syncGameInfo } from '../functions/sync/syncGameInfo.js';
+import { syncReviewsForGames } from '../functions/sync/syncReviewsForGames.js';
 
 export const LIMITS = {
   MIN_REVIEW_CHARS: 200,
@@ -24,7 +26,7 @@ export const LIMITS = {
 };
 
 export const USER_LIMITS = {
-  MAX_GAMES_FOR_USER: 30,
+  MAX_GAMES_FOR_USER: 50,
   MAX_GENRES: 50,
   MAX_CATEGORIES: 50,
 };
@@ -466,21 +468,41 @@ export const embeddingService = {
         logger.warn('[USER_EMBEDDING] No owned games');
         return;
       }
+
       const topGames = [...ownedGames]
         .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
         .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
       const gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
-      let counter = 0;
-      gameInfos.map((info) => {
-        if (!info) counter++;
+      const missingInfos: typeof topGames = [];
+
+      gameInfos.map((info, index) => {
+        const game = topGames[index];
+        if (!game.appid) {
+          logger.warn(`[USER_EMBEDDING] Owned game missing appid - skipping`, { game });
+          return info;
+        }
+        if (!info) {
+          missingInfos.push(game);
+        }
         return info;
       });
-      if (counter > 0) {
-        logger.warn(
-          //TODO: if no game info about we can get info and generate embedding
-          `[USER_EMBEDDING] Missing game info for ${counter} owned games – they will be skipped.`,
-        );
+
+      for (const { appid } of missingInfos) {
+        const syncResult = await syncGameInfo(appid);
+        if (!syncResult.success) {
+          logger.warn(
+            `[USER_EMBEDDING] Failed to sync game info for appId ${appid} - ${syncResult.reason}`,
+          );
+          continue;
+        }
       }
+
+      await syncReviewsForGames({ specificAppIds: missingInfos.map((g) => g.appid) });
+
+      logger.warn(
+        //TODO: if no game info about we can get info and generate embedding
+        `[USER_EMBEDDING] Missing game info for ${missingInfos.length} owned games – they will be skipped.`,
+      );
 
       const gameEmbRows = await db
         .select({

@@ -1,7 +1,7 @@
-import { embeddingService } from '../services/embeddings.service.js';
-import { gameService } from '../services/game.service.js';
-import { logger } from '../utils/logger.js';
-import { sleep } from '../utils/retry.js';
+import { embeddingService } from '../../services/embeddings.service.js';
+import { gameService } from '../../services/game.service.js';
+import { logger } from '../../utils/logger.js';
+import { sleep } from '../../utils/retry.js';
 
 export async function syncAllGameEmbeddings({
   batchSize = 2,
