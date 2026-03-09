@@ -1,13 +1,13 @@
 import {
   appReviewsEndpoint,
   mapAppReviewsToCreateReviewInput,
-} from '../clients/steam/endpoints/global/appReviews.endpoint.js';
-import { gameService } from '../services/game.service.js';
-import { reviewService } from '../services/review.service.js';
-import { cleanSteamBBCode } from '../utils/clearSteamBBCode.js';
-import { logger } from '../utils/logger.js';
-import { shouldSkipReview } from '../utils/shouldSkipReview.js';
-import { steamRequest } from '../utils/steamRequest.js';
+} from '../../clients/steam/endpoints/global/appReviews.endpoint.js';
+import { gameService } from '../../services/game.service.js';
+import { reviewService } from '../../services/review.service.js';
+import { cleanSteamBBCode } from '../../utils/clearSteamBBCode.js';
+import { logger } from '../../utils/logger.js';
+import { shouldSkipReview } from '../../utils/shouldSkipReview.js';
+import { steamRequest } from '../../utils/steamRequest.js';
 
 type FetchReviewsConfig = {
   appId: number;
@@ -17,6 +17,12 @@ type FetchReviewsConfig = {
     min: number;
     max: number;
   };
+};
+
+const defaults = {
+  textSize: { min: 100, max: 4000 },
+  positivePercentageThreshold: 60,
+  reviewCountForGame: 300,
 };
 
 export async function fetchAndSyncReviewsForGame({
@@ -124,29 +130,35 @@ export async function fetchAndSyncReviewsForGame({
 }
 
 type SyncAllGamesConfig = {
-  reviewCountForGame?: number;
-  positivePercentageThreshold?: number;
-  textSize?: {
-    min: number;
-    max: number;
-  };
+  specificAppIds?: number[]; // if provided, only these games will be synced (ignoring startAfterAppId)
   startAfterAppId?: number;
 };
 
-export async function syncReviewsForAllGames({
-  reviewCountForGame = 300,
-  positivePercentageThreshold = 60,
-  textSize = { min: 100, max: 4000 },
-  startAfterAppId,
-}: SyncAllGamesConfig) {
+export async function syncReviewsForGames({ startAfterAppId, specificAppIds }: SyncAllGamesConfig) {
   const appIds = await gameService.getAllAppIds();
   const startIndex = startAfterAppId ? appIds.indexOf(startAfterAppId) : -1;
   const slicedAppIds = startIndex === -1 ? appIds : appIds.slice(startIndex);
 
-  for (const appId of slicedAppIds) {
+  if (
+    specificAppIds &&
+    specificAppIds.length > 0 &&
+    !specificAppIds.every((id) => appIds.includes(id))
+  ) {
+    logger.error(
+      `[SYNC] Some specified app IDs are not in the game database`,
+      {},
+      { specificAppIds, availableAppIds: appIds },
+    );
+    return;
+  }
+
+  for (const appId of specificAppIds ? specificAppIds : slicedAppIds) {
     logger.info(`=== Sync start for appId ${appId} ===`);
 
     try {
+      const { reviewCountForGame, positivePercentageThreshold, textSize } = {
+        ...defaults,
+      };
       const positiveTarget = Math.floor(reviewCountForGame * (positivePercentageThreshold / 100));
       const negativeTarget = reviewCountForGame - positiveTarget;
 
