@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
-import { Outlet } from 'react-router-dom';
 
-export function AuthProvider() {
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [authorized, setAuthorized] = useState<boolean>(false);
 
   useEffect(() => {
     fetch('/user/me', { credentials: 'include' })
@@ -15,7 +14,7 @@ export function AuthProvider() {
 
   return (
     <AuthContext.Provider value={{ authorized, setAuthorized }}>
-      <Outlet />
+      {children}
     </AuthContext.Provider>
   );
 }
