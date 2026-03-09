@@ -6,7 +6,7 @@ export function AuthProvider() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    fetch('/api/me', { credentials: 'include' })
+    fetch('/user/me', { credentials: 'include' })
       .then((res) => {
         setAuthorized(res.status === 200);
       })
