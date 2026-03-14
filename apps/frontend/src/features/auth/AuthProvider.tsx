@@ -1,22 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthContext } from './AuthContext';
-import { Outlet } from 'react-router-dom';
 import { userService } from '../../services/userService';
 
-export function AuthProvider() {
-  const [authorized, setAuthorized] = useState<boolean>(false);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<{ userId: number } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const response = await userService.checkAuth();
-      setAuthorized(!!response?.userId);
+    const init = async () => {
+      try {
+        const data = await userService.checkAuth();
+        setUser(data ?? null);
+      } finally {
+        setLoading(false);
+      }
     };
-    checkAuth();
+
+    init();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ authorized, setAuthorized }}>
-      <Outlet />
+    <AuthContext.Provider value={{ user, setUser, loading }}>
+      {children}
     </AuthContext.Provider>
   );
 }

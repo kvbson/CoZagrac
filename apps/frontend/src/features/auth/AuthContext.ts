@@ -1,11 +1,13 @@
 import { createContext } from 'react';
 
 export type AuthContextType = {
-  authorized: boolean;
-  setAuthorized: (value: boolean) => void;
+  user: { userId: number } | null;
+  loading: boolean;
+  setUser: (user: { userId: number } | null) => void;
 };
 
 export const AuthContext = createContext<AuthContextType>({
-  authorized: false,
-  setAuthorized: () => {},
+  user: null,
+  loading: true,
+  setUser: () => {},
 });
