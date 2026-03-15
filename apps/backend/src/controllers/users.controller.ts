@@ -1,19 +1,23 @@
 import { Request, Response } from 'express';
 import {
-  CreateUserInput,
-  UpdateUserParams,
-  UpdateUserBody,
+  CreateUserInputWithHash,
   DeleteUserParams,
   GetUserQuery,
-} from '../schemas/user.zod.js';
+  UpdateUserBody,
+  UpdateUserParams,
+} from '@cozagrac/shared/contracts/api';
 import { userService } from '../services/user.service.js';
 import { getSessionUserId } from '../functions/setUserSession.js';
+import { hashPassword } from '../utils/hash.js';
 
 /* =========================
    CREATE
 ========================= */
 
-export const createUser = async (req: Request<object, object, CreateUserInput>, res: Response) => {
+export const createUser = async (
+  req: Request<object, object, CreateUserInputWithHash>,
+  res: Response,
+) => {
   const user = await userService.create(req.body);
   return res.status(201).json(user);
 };
@@ -26,7 +30,14 @@ export const updateUser = async (
   req: Request<UpdateUserParams, object, UpdateUserBody>,
   res: Response,
 ) => {
-  const user = await userService.update(req.params.userId, req.body);
+  if (Object.keys(req.body).length === 0) {
+    return res.status(400).json({ message: 'No data provided for update' });
+  }
+  let passwordHash: string | undefined;
+  if (req.body.password) {
+    passwordHash = await hashPassword(req.body.password);
+  }
+  const user = await userService.update(req.params.userId, { ...req.body, passwordHash });
 
   if (!user) {
     return res.sendStatus(404);

@@ -13,5 +13,5 @@ export const getGameInfoByAppId = async (req: Request, res: Response) => {
     return res.sendStatus(404);
   }
 
-  res.status(200).json(game);
+  return res.status(200).json(game);
 };

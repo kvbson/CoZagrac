@@ -6,14 +6,14 @@ import {
   deleteUser,
   me,
 } from '../../controllers/users.controller.js';
+import { requireAuth, requireSameUserParam } from '../../middlewares/requireAuth.js';
+import { validate } from '../../utils/validate.js';
 import {
   createUserHttpSchema,
   getUserHttpSchema,
   updateUserHttpSchema,
   deleteUserHttpSchema,
-} from '../../schemas/user.zod.js';
-import { requireAuth, requireSameUserParam } from '../../middlewares/requireAuth.js';
-import { validate } from '../../utils/validate.js';
+} from '@cozagrac/shared/contracts/api';
 
 const router = Router();
 
