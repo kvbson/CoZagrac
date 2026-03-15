@@ -1,0 +1,17 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# kopiujemy package.json workspace
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY apps/shared/package*.json ./apps/shared/
+
+RUN npm install
+
+# kopiujemy kod
+COPY . .
+
+RUN npm run build -w backend
+
+CMD ["node", "apps/backend/dist/src/index.js"]
