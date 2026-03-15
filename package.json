@@ -11,7 +11,8 @@
     "dev": "concurrently -n CLIENT,SERVER,TYPECHECK -c magenta,green,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:typecheck\"",
     "build:client": "npm --prefix apps/frontend run build",
     "build:server": "npm --prefix apps/backend run build",
-    "build": "npm run build:client && npm run build:server",
+    "build:shared": "npm --prefix apps/shared run build",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
     "lint:backend": "eslint apps/backend --config apps/backend/eslint.config.js",
     "lint:frontend": "eslint apps/frontend --config apps/frontend/eslint.config.js",
     "lint": "npm run lint:frontend && npm run lint:backend"
