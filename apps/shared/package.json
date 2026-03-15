@@ -1,0 +1,16 @@
+{
+  "name": "@cozagrac/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/contracts/api.js",
+  "types": "./dist/contracts/api.d.ts",
+  "exports": {
+    "./contracts/api": {
+      "types": "./dist/contracts/api.d.ts",
+      "default": "./dist/contracts/api.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}
