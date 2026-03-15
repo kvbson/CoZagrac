@@ -8,17 +8,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev:client": "npm --prefix apps/frontend run dev",
-    "dev:server": "npm --prefix apps/backend run dev",
-    "dev:typecheck": "npm --prefix apps/backend run typecheck",
-    "dev": "concurrently -n CLIENT,SERVER,TYPECHECK -c magenta,green,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:typecheck\"",
-    "build:client": "npm --prefix apps/frontend run build",
-    "build:server": "npm --prefix apps/backend run build",
-    "build:shared": "npm --prefix apps/shared run build",
-    "build": "npm run build:shared && npm run build:client && npm run build:server",
-    "lint:backend": "eslint apps/backend --config apps/backend/eslint.config.js",
-    "lint:frontend": "eslint apps/frontend --config apps/frontend/eslint.config.js",
-    "lint": "npm run lint:frontend && npm run lint:backend"
+    "dev": "concurrently -n CLIENT,SERVER,TYPECHECK -c magenta,green,blue \"npm run dev -w frontend\" \"npm run dev -w backend\" \"npm run typecheck -w backend\"",
+    "build": "npm run build -w @cozagrac/shared && npm run build -w frontend && npm run build -w backend",
+    "lint": "npm run lint -w frontend && npm run lint -w backend"
   },
   "repository": {
     "type": "git",
