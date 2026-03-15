@@ -1,9 +1,9 @@
 import { createContext } from 'react';
 
 export type AuthContextType = {
-  user: { userId: number } | null;
+  user: { userId: string } | null;
   loading: boolean;
-  setUser: (user: { userId: number } | null) => void;
+  setUser: (user: { userId: string } | null) => void;
 };
 
 export const AuthContext = createContext<AuthContextType>({
