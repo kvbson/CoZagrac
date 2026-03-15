@@ -22,6 +22,7 @@ apps/frontend/.vite/
 apps/backend/dist/
 apps/backend/generated/prisma
 apps/backend/src/db/scripts/expose_db_tolocal.bash
+apps/backend/src/datasets
 
 # =========================
 # TypeScript
