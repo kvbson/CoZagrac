@@ -1,8 +1,13 @@
 import { createContext } from 'react';
 
-type AuthContextType = {
-  authorized: boolean | null;
-  setAuthorized: (value: boolean) => void;
+export type AuthContextType = {
+  user: { userId: number } | null;
+  loading: boolean;
+  setUser: (user: { userId: number } | null) => void;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  setUser: () => {},
+});

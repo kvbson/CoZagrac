@@ -1,18 +1,30 @@
-import { Routes, Route } from 'react-router-dom';
-import { AuthPage } from './pages/AuthPage';
-import { HomePage } from './pages/HomePage';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthProvider';
+import { AuthGate } from './features/auth/AuthGate';
+import { HomePage } from './pages/HomePage';
+import { AuthPage } from './pages/AuthPage';
+import { AppLayout } from './components/layout/AppLayout';
 
 export function App() {
   return (
-    // <BrowserRouter>
-    <Routes>
-      <Route element={<AuthProvider />}>
-        <Route path="/" element={<HomePage />} />
-      </Route>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
 
-      <Route path="/auth" element={<AuthPage />} />
-    </Routes>
-    // </BrowserRouter>
+          <Route
+            element={
+              <AuthGate>
+                <AppLayout />
+              </AuthGate>
+            }
+          />
+          <Route path="/" element={<HomePage />} />
+          {/* <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/settings" element={<SettingsPage />} /> */}
+          <HomePage />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
