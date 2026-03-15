@@ -1,0 +1,47 @@
+{
+  "name": "cozagrac",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:client": "npm --prefix apps/frontend run dev",
+    "dev:server": "npm --prefix apps/backend run dev",
+    "dev:typecheck": "npm --prefix apps/backend run typecheck",
+    "dev": "concurrently -n CLIENT,SERVER,TYPECHECK -c magenta,green,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:typecheck\"",
+    "build:client": "npm --prefix apps/frontend run build",
+    "build:server": "npm --prefix apps/backend run build",
+    "build:shared": "npm --prefix apps/shared run build",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
+    "lint:backend": "eslint apps/backend --config apps/backend/eslint.config.js",
+    "lint:frontend": "eslint apps/frontend --config apps/frontend/eslint.config.js",
+    "lint": "npm run lint:frontend && npm run lint:backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kvbson/CoZagrac.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kvbson/CoZagrac/issues"
+  },
+  "homepage": "https://github.com/kvbson/CoZagrac#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.0.9",
+    "concurrently": "^9.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.0.0",
+    "prettier": "^3.8.0",
+    "typescript-eslint": "^8.53.0"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
