@@ -1,15 +1,15 @@
 import { desc, eq, and } from 'drizzle-orm';
 import { db } from '../db/init.js';
 import { userEmbeddings, userProviders, users } from '../drizzle/schema.js';
+import { publicUserSchema } from '../schemas/user.zod.js';
 import {
   CreateProviderInput,
-  CreateUserInput,
-  publicUserSchema,
-  UpdateUserBody,
-} from '../schemas/user.zod.js';
+  CreateUserInputWithHash,
+  UpdateUserBodyWithHash,
+} from '@cozagrac/shared/contracts/api';
 
 export const userService = {
-  async create(data: CreateUserInput) {
+  async create(data: CreateUserInputWithHash) {
     const [user] = await db.insert(users).values(data).returning();
 
     return publicUserSchema.parse(user);
@@ -26,7 +26,7 @@ export const userService = {
     return provider;
   },
 
-  async update(id: string, data: UpdateUserBody) {
+  async update(id: string, data: UpdateUserBodyWithHash) {
     const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     if (!user) return null;
     return { userId: user.id };

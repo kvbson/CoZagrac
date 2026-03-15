@@ -1,8 +1,9 @@
 import { setSessionUser } from '../functions/setUserSession.js';
-import { LoginUserInput } from '../schemas/user.zod.js';
 import { userService } from '../services/user.service.js';
-import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
+import { hashPassword } from '../utils/hash.js';
+import { LoginUserInput } from '@cozagrac/shared/contracts/api';
+import bcrypt from 'bcrypt';
 
 /* =========================
    REGISTER (email + password)
@@ -16,7 +17,7 @@ export const register = async (req: Request<object, object, LoginUserInput>, res
     return res.status(400).json({ message: 'Email already exists' });
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hashPassword(password);
 
   const user = await userService.create({
     email,
@@ -50,4 +51,17 @@ export const login = async (req: Request<object, object, LoginUserInput>, res: R
   setSessionUser(req, user.userId);
 
   return res.status(200).json({ message: 'Logged in' });
+};
+
+/* =========================
+   LOGOUT
+========================= */
+export const logout = async (req: Request, res: Response) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).json({ message: 'Error logging out' });
+    }
+    return res.status(200).json({ message: 'Logged out' });
+  });
 };

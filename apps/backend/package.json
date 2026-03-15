@@ -30,7 +30,8 @@
     "passport": "^0.7.0",
     "passport-steam": "^1.0.18",
     "pg": "^8.17.2",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "@cozagrac/shared": "*"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
