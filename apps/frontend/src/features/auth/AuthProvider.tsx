@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
-import { AuthContext } from './AuthContext';
+import { AuthContext } from '../../context/AuthContext';
 import { userService } from '../../services/userService';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ userId: number } | null>(null);
+  const [user, setUser] = useState<{ userId: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
       try {
-        const data = await userService.checkAuth();
-        setUser(data ?? null);
+        const { userData, success } = await userService.checkAuth();
+        if (success && userData?.userId) {
+          setUser({ userId: userData.userId });
+        } else {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -19,9 +23,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, setUser, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, setUser, loading }}>{children}</AuthContext.Provider>;
 }
