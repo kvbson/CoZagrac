@@ -18,11 +18,11 @@ export function App() {
                 <AppLayout />
               </AuthGate>
             }
-          />
-          <Route path="/" element={<HomePage />} />
-          {/* <Route path="/dashboard" element={<DashboardPage />} />
+          >
+            <Route path="/" element={<HomePage />} />
+            {/* <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/settings" element={<SettingsPage />} /> */}
-          <HomePage />
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
