@@ -277,13 +277,14 @@ CREATE TABLE IF NOT EXISTS user_tags (
 -- SESSIONS
 -- =========================
 CREATE TABLE sessions (
-  id varchar PRIMARY KEY,
+  sid varchar PRIMARY KEY,
   user_id uuid REFERENCES users(id) ON DELETE CASCADE,
   sess jsonb NOT NULL,
   expire timestamptz NOT NULL
 );
 
 CREATE INDEX idx_sessions_expire ON sessions (expire);
+CREATE INDEX IDX_sessions_user_id ON sessions (user_id);
 
 -- =========================
 -- REVIEWS INDEXES
@@ -437,3 +438,9 @@ COMMIT;
 --   plainto_tsquery('english', 'open world rpg')
 -- ) DESC
 -- LIMIT 20;
+
+-- ========================================
+-- GRANTS
+-- ========================================
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE sessions TO app_user;

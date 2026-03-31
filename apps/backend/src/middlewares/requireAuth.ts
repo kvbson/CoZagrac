@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
+import { getSessionUserId } from '../functions/setUserSession.js';
 
 function getCurrentUserId(req: Request) {
   if (req.user?.userId) return req.user.userId;
 
-  const sessionUserId = (req.session as { userId?: string } | undefined)?.userId;
+  const sessionUserId = getSessionUserId(req);
   if (sessionUserId) return sessionUserId;
 
   return null;
@@ -11,7 +12,6 @@ function getCurrentUserId(req: Request) {
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const userId = getCurrentUserId(req);
-
   if (!userId) {
     return res.sendStatus(401);
   }

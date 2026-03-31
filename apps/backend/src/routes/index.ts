@@ -10,5 +10,8 @@ router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
 router.use('/game', gameRoutes);
 router.use('/reviews', reviewRoutes);
+router.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
 
 export default router;

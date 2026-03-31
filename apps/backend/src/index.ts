@@ -26,7 +26,7 @@ app.use(
 if (!isDev) {
   app.use(
     cors({
-      origin: domain,
+      origin: [domain, 'http://localhost:5137'],
       credentials: true,
     }),
   );
@@ -38,11 +38,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
-app.use(mainRouter);
+app.use('/api', mainRouter);
 
 // Start server
 async function startServer() {

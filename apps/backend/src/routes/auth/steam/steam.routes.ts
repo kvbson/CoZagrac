@@ -8,10 +8,10 @@ router.get('/steam', passport.authenticate('steam'));
 router.get(
   '/steam/callback',
   passport.authenticate('steam', {
-    failureRedirect: '/',
+    failureRedirect: 'http://localhost:5137/auth',
   }),
   (req, res) => {
-    res.redirect('/');
+    res.redirect('http://localhost:5137/');
   },
 );
 
