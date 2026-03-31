@@ -1,6 +1,9 @@
+import { userService } from '../../services/userService';
+
 export function SteamButton() {
-  function handleSteamLogin() {
-    window.location.href = '/auth/steam';
+  async function handleSteamLogin() {
+    const res = await userService.loginBySteam();
+    return res;
   }
 
   return <button onClick={handleSteamLogin}>Sign in with Steam</button>;

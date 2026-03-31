@@ -1,18 +1,38 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd());
+  return {
+    plugins: [
+      react({
+        babel: {
+          plugins: [['babel-plugin-react-compiler']],
+        },
+      }),
+    ],
+    server: {
+      host: true,
+      port: 5137,
+      strictPort: true,
+      cors: true,
+      origin: 'http://localhost:5137',
+      fs: {
+        strict: false,
       },
-    }),
-  ],
-  server: {
-    proxy: {
-      '/api': 'http://localhost:3001'
-    }
-  }
-})
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 5137,
+      },
+      proxy: {
+        '/api': {
+          target: env.VITE_API_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+  };
+});
