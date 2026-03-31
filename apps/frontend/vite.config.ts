@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '../', 'REACT_APP_');
-
+  const env = loadEnv(mode, process.cwd());
   return {
     plugins: [
       react({
@@ -13,14 +12,27 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
-    define: {
-      'process.env': env,
-    },
     server: {
-      proxy: {
-        '/api': env.REACT_APP_API_URL,
+      host: true,
+      port: 5137,
+      strictPort: true,
+      cors: true,
+      origin: 'http://localhost:5137',
+      fs: {
+        strict: false,
       },
-      changeOrigin: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 5137,
+      },
+      proxy: {
+        '/api': {
+          target: env.VITE_API_URL,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
   };
 });
