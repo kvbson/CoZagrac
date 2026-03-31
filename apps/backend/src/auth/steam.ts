@@ -8,12 +8,12 @@ import { domain } from '../config/runtime.js';
 ======================== */
 
 passport.serializeUser((user, done) => {
-  done(null, user.userId);
+  done(null, { userId: user.userId });
 });
 
-passport.deserializeUser(async (id: string, done) => {
-  const user = await userService.getById(id);
-  done(null, user ?? null);
+passport.deserializeUser(async ({ userId }: { userId: string }, done) => {
+  const user = await userService.getById(userId);
+  done(null, user && { userId: user?.userId });
 });
 
 /* ========================
@@ -23,7 +23,7 @@ passport.deserializeUser(async (id: string, done) => {
 passport.use(
   new SteamStrategy(
     {
-      returnURL: `${domain}/auth/steam/callback`,
+      returnURL: `${domain}/api/auth/steam/callback`,
       realm: `${domain}/`,
       apiKey: process.env.STEAM_API_KEY!,
     },
@@ -37,7 +37,6 @@ passport.use(
           const user = await userService.getById(provider.userId);
           return done(null, user);
         }
-
         const user = await userService.create({
           email: null,
           passwordHash: null,
