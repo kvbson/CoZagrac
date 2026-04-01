@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { AuthGate } from './features/auth/AuthGate';
-import { HomePage } from './pages/HomePage';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { RootLayout } from './components/layout/RootLayout';
+import { HomePage } from './pages/HomePage';
 
 export function App() {
   return (

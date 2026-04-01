@@ -4,3 +4,136 @@
   gap: 8px;
   align-items: center;
 }
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-bg-light);
+  padding: 10px 20px;
+  color: white;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.logoIcon:hover {
+  transform: scale(1.1);
+  transition-duration: 200ms;
+  cursor: pointer;
+}
+
+.logoIcon {
+  width: 80px;
+  height: 65px;
+}
+
+.logoIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.link {
+  font-size: 14px;
+  color: var(--off-white);
+  cursor: pointer;
+  position: relative;
+  text-decoration: none;
+  display: inline-block;
+  transition:
+    transform 0.1s ease,
+    color 0.15s ease;
+}
+
+.link:hover {
+  color: #ffffff;
+}
+
+.link:active {
+  transform: scale(0.92);
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 2px;
+  background: var(--light-green);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.25s ease;
+}
+
+.link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding-right: 1.5em;
+}
+
+.search {
+  background: var(--primary-bg-dark);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: white;
+  width: 180px;
+}
+
+.login {
+  background: var(--light-green);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #0b0f14;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.login:hover {
+  background: #6ac015;
+  box-shadow: 0 0 12px rgba(126, 211, 33, 0.7);
+  transform: scale(1.05);
+}
+
+.login:active {
+  transform: scale(0.96);
+  box-shadow: 0 0 20px rgba(126, 211, 33, 1);
+}
+
+.userIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.userIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userIcon:hover {
+  border: 2px solid #7ed321;
+  box-shadow: 0 0 8px rgba(126, 211, 33, 0.6);
+  transform: scale(1.05);
+}
