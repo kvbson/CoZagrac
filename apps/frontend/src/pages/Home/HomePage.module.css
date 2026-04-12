@@ -35,7 +35,7 @@
 .hero__content {
   position: relative;
   z-index: 2;
-  max-width: 650px;
+  max-width: 750px;
 }
 
 .hero__title {
@@ -52,9 +52,9 @@
 
 .hero__desc {
   margin: 0 0 24px;
-  max-width: 620px;
+  max-width: 700px;
   color: #d2e1ef;
-  font-size: clamp(17px, 2vw, 33px);
+  font-size: clamp(17px, 1.1vw, 33px);
   line-height: 1.45;
 }
 
@@ -65,7 +65,7 @@
   color: #fff;
   padding: 16px 24px;
   min-width: 290px;
-  font-size: clamp(18px, 2vw, 31px);
+  font-size: clamp(18px, 1.2vw, 31px);
   font-weight: 700;
   letter-spacing: 0.25px;
   display: inline-flex;
@@ -81,13 +81,13 @@
 }
 
 .hero__btnIcon {
-  font-size: clamp(18px, 1.7vw, 25px);
+  width: clamp(31px, 1.8vw, 50px);
 }
 
 .hero__note {
   margin: 12px 0 0;
   color: rgba(192, 217, 237, 0.75);
-  font-size: clamp(13px, 1.3vw, 22px);
+  font-size: clamp(13px, 0.9vw, 22px);
 }
 
 .section {

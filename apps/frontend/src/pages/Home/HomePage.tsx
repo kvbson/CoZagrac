@@ -3,7 +3,8 @@ import styles from './HomePage.module.css';
 const onboardingSteps = [
   {
     title: '1. Połącz konto Steam',
-    description: 'Logowanie przez OpenID pozwala bezpiecznie pobrać bibliotekę i historię rozgrywki.',
+    description:
+      'Logowanie przez OpenID pozwala bezpiecznie pobrać bibliotekę i historię rozgrywki.',
   },
   {
     title: '2. Ustaw preferencje',
@@ -56,14 +57,16 @@ export function HomePage() {
 
           <p className={styles.hero__desc}>
             Zaloguj się, aby połączyć swoje konto Steam i otrzymać spersonalizowane rekomendacje
-            oparte na Twojej historii gier. Nasz algorytm znajdzie ukryte perełki idealnie dopasowane
-            do Ciebie.
+            oparte na Twojej historii gier.
+            <br /> Nasz algorytm znajdzie ukryte perełki idealnie dopasowane do Ciebie.
           </p>
 
           <button type="button" className={styles.hero__btn}>
-            <span className={styles.hero__btnIcon} aria-hidden="true">
-              🎮
-            </span>
+            <img
+              className={styles.hero__btnIcon}
+              src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg"
+              alt="Steam logo"
+            ></img>
             POŁĄCZ KONTO STEAM
           </button>
 
@@ -115,7 +118,7 @@ export function HomePage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Dlaczego CoZaGrać?</h2>
+        <h2 className={styles.sectionTitle}>Dlaczego CoZagrać?</h2>
         <ul className={styles.featureList}>
           {keyFeatures.map((feature) => (
             <li key={feature}>{feature}</li>
