@@ -5,7 +5,7 @@ export const AppLayout = () => {
   return (
     <div>
       <Navbar />
-      <main className="app content">
+      <main className="content">
         <Outlet />
       </main>
     </div>

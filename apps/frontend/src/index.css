@@ -31,11 +31,14 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
 }
 
 .auth {
@@ -53,5 +56,5 @@ body {
 
 .content {
   background: var(--primary-bg-light);
-  padding: 24px;
+  padding: clamp(16px, 2.6vw, 24px);
 }
