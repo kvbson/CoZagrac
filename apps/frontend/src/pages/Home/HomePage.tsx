@@ -1,48 +1,20 @@
+import { useTranslation } from 'react-i18next';
 import styles from './HomePage.module.css';
 
-const onboardingSteps = [
-  {
-    title: '1. Połącz konto Steam',
-    description:
-      'Logowanie przez OpenID pozwala bezpiecznie pobrać bibliotekę i historię rozgrywki.',
-  },
-  {
-    title: '2. Ustaw preferencje',
-    description: 'Wybierz ulubione gatunki, poziom trudności, długość gry i tryb (solo/co-op).',
-  },
-  {
-    title: '3. Odbierz rekomendacje',
-    description: 'Dostajesz shortlistę gier dopasowaną do Twojego stylu i aktualnych promocji.',
-  },
-];
-
-const recommendationPillars = [
-  {
-    title: 'Ukryte perełki',
-    tags: 'Roguelite • Indie • Deck Verified',
-  },
-  {
-    title: 'Najlepsze co-op',
-    tags: '2-4 graczy • Online/LAN • Voice Friendly',
-  },
-  {
-    title: 'Dla fanów fabuły',
-    tags: 'Narrative • Single-player • Choices Matter',
-  },
-  {
-    title: 'Szybkie sesje',
-    tags: 'Do 30 min • Arcade • Low commitment',
-  },
-];
-
-const keyFeatures = [
-  'Rekomendacje oparte na realnej historii gier i czasie spędzonym w tytułach.',
-  'Filtry pod platformę, budżet, gatunek, ocenę społeczności i język.',
-  'Wykrywanie podobnych tytułów do Twoich ulubionych serii.',
-  'Personalizowane listy “zagraj dziś”, “na weekend” i “na przecenie”.',
-];
+type HomeArrayItem = {
+  title: string;
+  description?: string;
+  tags?: string;
+};
 
 export function HomePage() {
+  const { t } = useTranslation();
+  const onboardingSteps = t('home.onboardingSteps', { returnObjects: true }) as HomeArrayItem[];
+  const recommendationPillars = t('home.recommendationPillars', {
+    returnObjects: true,
+  }) as HomeArrayItem[];
+  const keyFeatures = t('home.keyFeatures', { returnObjects: true }) as string[];
+
   return (
     <div className={styles.homePage}>
       <section className={styles.hero}>
@@ -50,15 +22,14 @@ export function HomePage() {
 
         <div className={styles.hero__content}>
           <h1 className={styles.hero__title}>
-            ODKRYJ SWOJĄ
+            {t('home.heroTitleLine1')}
             <br />
-            NASTĘPNĄ <span>OBSESJĘ</span>
+            {t('home.heroTitleLine2')} <span>{t('home.heroTitleHighlight')}</span>
           </h1>
 
           <p className={styles.hero__desc}>
-            Zaloguj się, aby połączyć swoje konto Steam i otrzymać spersonalizowane rekomendacje
-            oparte na Twojej historii gier.
-            <br /> Nasz algorytm znajdzie ukryte perełki idealnie dopasowane do Ciebie.
+            {t('home.heroDescription')}
+            <br /> {t('home.heroDescriptionSecond')}
           </p>
 
           <button type="button" className={styles.hero__btn}>
@@ -67,30 +38,30 @@ export function HomePage() {
               src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg"
               alt="Steam logo"
             ></img>
-            POŁĄCZ KONTO STEAM
+            {t('home.connectSteam')}
           </button>
 
-          <p className={styles.hero__note}>*Bezpieczne logowanie przez OpenID</p>
+          <p className={styles.hero__note}>{t('home.secureLogin')}</p>
         </div>
       </section>
 
       <section className={styles.statsGrid}>
         <article className={styles.statCard}>
           <p className={styles.statValue}>12k+</p>
-          <p className={styles.statLabel}>gier analizowanych tygodniowo</p>
+          <p className={styles.statLabel}>{t('home.stats.games')}</p>
         </article>
         <article className={styles.statCard}>
           <p className={styles.statValue}>89%</p>
-          <p className={styles.statLabel}>użytkowników klika rekomendację</p>
+          <p className={styles.statLabel}>{t('home.stats.users')}</p>
         </article>
         <article className={styles.statCard}>
           <p className={styles.statValue}>350+</p>
-          <p className={styles.statLabel}>tagów i filtrów Steam</p>
+          <p className={styles.statLabel}>{t('home.stats.tags')}</p>
         </article>
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Jak to działa</h2>
+        <h2 className={styles.sectionTitle}>{t('home.howItWorks')}</h2>
         <div className={styles.stepsGrid}>
           {onboardingSteps.map((step) => (
             <article key={step.title} className={styles.infoCard}>
@@ -103,8 +74,8 @@ export function HomePage() {
 
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Co rekomendujemy</h2>
-          <p>Przykładowe segmenty, które budujemy pod Twój profil gracza.</p>
+          <h2 className={styles.sectionTitle}>{t('home.recommendTitle')}</h2>
+          <p>{t('home.recommendDescription')}</p>
         </div>
 
         <div className={styles.pillarsGrid}>
@@ -118,7 +89,7 @@ export function HomePage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Dlaczego CoZagrać?</h2>
+        <h2 className={styles.sectionTitle}>{t('home.whyTitle')}</h2>
         <ul className={styles.featureList}>
           {keyFeatures.map((feature) => (
             <li key={feature}>{feature}</li>
@@ -127,10 +98,10 @@ export function HomePage() {
       </section>
 
       <section className={styles.bottomCta}>
-        <h2>Gotowy na kolejną grę, którą naprawdę skończysz?</h2>
-        <p>Połącz konto Steam i sprawdź pierwszą paczkę rekomendacji w mniej niż minutę.</p>
+        <h2>{t('home.ctaTitle')}</h2>
+        <p>{t('home.ctaDescription')}</p>
         <button type="button" className={styles.secondaryBtn}>
-          Rozpocznij personalizację
+          {t('home.ctaButton')}
         </button>
       </section>
     </div>

@@ -83,6 +83,22 @@
   padding-right: 1.5em;
 }
 
+.languageControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--off-white);
+  font-size: 13px;
+}
+
+.languageSelect {
+  background: var(--primary-bg-dark);
+  border: 1px solid #2f3c4a;
+  color: white;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
 .search {
   background: var(--primary-bg-dark);
   border: none;
