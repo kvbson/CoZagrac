@@ -3,7 +3,7 @@ import { AuthProvider } from './features/auth/AuthProvider';
 import { AuthGate } from './features/auth/AuthGate';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
-import { HomePage } from './pages/HomePage';
+import { HomePage } from './pages/Home/HomePage';
 
 export function App() {
   return (
@@ -14,9 +14,9 @@ export function App() {
 
           <Route
             element={
-              <AuthGate>
-                <AppLayout />
-              </AuthGate>
+              // <AuthGate> TODO: do odkomentowania po testach
+              <AppLayout />
+              // </AuthGate>
             }
           >
             <Route path="/" element={<HomePage />} />

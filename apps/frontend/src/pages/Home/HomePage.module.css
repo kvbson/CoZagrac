@@ -1,0 +1,68 @@
+.hero {
+  position: relative;
+  height: 420px;
+  background: url('/303.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(23, 26, 33, 0.9) 0%,
+    rgba(23, 26, 33, 0.7) 40%,
+    rgba(23, 26, 33, 0.3) 70%,
+    transparent 100%
+  );
+  z-index: 1;
+}
+
+.hero__content {
+  position: relative;
+  max-width: 600px;
+  padding: 40px;
+  z-index: 2;
+}
+
+.hero__title {
+  font-size: 44px;
+  font-weight: var(--hard-bold-weight);
+  line-height: 1.15;
+  margin: 0 0 16px;
+  color: white;
+}
+
+.hero__title span {
+  color: var(--light-blue);
+}
+
+.hero__desc {
+  font-size: 14px;
+  color: var(--text-color);
+  margin-bottom: 24px;
+  max-width: 520px;
+}
+
+.hero__btn {
+  background: linear-gradient(90deg, #2a475e, #1b2838);
+  color: var(--off-white);
+  border: none;
+  padding: 14px 22px;
+  border-radius: 4px;
+  font-weight: var(--bold-weight);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.hero__btn:hover {
+  background: linear-gradient(90deg, #3b6a8f, #2a475e);
+}
+
+.hero__note {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.6;
+}
