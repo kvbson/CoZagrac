@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthProvider';
-import { AuthGate } from './features/auth/AuthGate';
 import { AppLayout } from './components/layout/AppLayout';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { HomePage } from './pages/Home/HomePage';

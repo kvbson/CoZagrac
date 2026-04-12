@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm --prefix ../shared run build",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
