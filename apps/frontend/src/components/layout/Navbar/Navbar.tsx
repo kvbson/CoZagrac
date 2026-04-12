@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import styles from './navbar.module.css';
+import styles from './Navbar.module.css';
 import { useContext } from 'react';
 import { AuthContext } from '../../../context/AuthContext';
 
@@ -14,14 +14,14 @@ export const Navbar = () => {
             <img src="/logo.png" />
           </div>
         </Link>
-        <Link to="/recommendations">
-          <a className={styles.link}>RECOMMENDATIONS</a>
+        <Link to="/recommendations" className={styles.link}>
+          RECOMMENDATIONS
         </Link>
-        <Link to="/explore">
-          <a className={styles.link}>EXPLORE</a>
+        <Link to="/explore" className={styles.link}>
+          EXPLORE
         </Link>
-        <Link to="/preferences">
-          <a className={styles.link}>PREFERENCES</a>
+        <Link to="/preferences" className={styles.link}>
+          PREFERENCES
         </Link>
         {/* <a className={styles.link}>ANALYTICS</a> TODO:*/}
       </div>

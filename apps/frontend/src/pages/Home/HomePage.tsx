@@ -1,24 +1,32 @@
+import styles from './HomePage.module.css';
+
 export function HomePage() {
   return (
-    <div className="hero">
-      <div className="hero__overlay"></div>
+    <section className={styles.hero}>
+      <div className={styles.hero__overlay} />
 
-      <div className="hero__content">
-        <h1 className="hero__title">
-          ODKRYJ SWOJĄ <br />
+      <div className={styles.hero__content}>
+        <h1 className={styles.hero__title}>
+          ODKRYJ SWOJĄ
+          <br />
           NASTĘPNĄ <span>OBSESJĘ</span>
         </h1>
 
-        <p className="hero__desc">
+        <p className={styles.hero__desc}>
           Zaloguj się, aby połączyć swoje konto Steam i otrzymać spersonalizowane rekomendacje
           oparte na Twojej historii gier. Nasz algorytm znajdzie ukryte perełki idealnie dopasowane
           do Ciebie.
         </p>
 
-        <button className="hero__btn">🎮 POŁĄCZ KONTO STEAM</button>
+        <button type="button" className={styles.hero__btn}>
+          <span className={styles.hero__btnIcon} aria-hidden="true">
+            🎮
+          </span>
+          POŁĄCZ KONTO STEAM
+        </button>
 
-        <div className="hero__note">*Bezpieczne logowanie przez OpenID</div>
+        <p className={styles.hero__note}>*Bezpieczne logowanie przez OpenID</p>
       </div>
-    </div>
+    </section>
   );
 }
