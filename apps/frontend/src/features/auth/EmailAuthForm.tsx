@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 
 export function EmailAuthForm() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -16,31 +16,65 @@ export function EmailAuthForm() {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: username, password }),
     });
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="auth-form" onSubmit={handleSubmit}>
       <Input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        type="text"
+        label="NAZWA UŻYTKOWNIKA STEAM"
+        placeholder="Wpisz swoją nazwę"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        wrapperClassName="auth-field"
+        labelClassName="auth-label"
+        inputClassName="auth-input"
       />
 
       <Input
         type="password"
-        placeholder="Password"
+        label="HASŁO"
+        placeholder="Wpisz swoje hasło"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        wrapperClassName="auth-field"
+        labelClassName="auth-label"
+        inputClassName="auth-input"
       />
 
-      <Button type="submit">{mode === 'login' ? 'Login' : 'Register'}</Button>
+      <div className="auth-form-meta">
+        <label className="remember-me">
+          <input type="checkbox" />
+          <span>Zapamiętaj mnie</span>
+        </label>
+        <button type="button" className="auth-link-button">
+          Zapomniałeś hasła?
+        </button>
+      </div>
 
-      <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-        {mode === 'login' ? 'Create account' : 'Already have an account?'}
-      </button>
+      <Button type="submit" className="auth-submit">
+        {mode === 'login' ? 'ZALOGUJ SIĘ' : 'ZAREJESTRUJ SIĘ'}
+      </Button>
+
+      <div className="auth-switch">
+        <span>{mode === 'login' ? 'Nie masz konta?' : 'Masz już konto?'}</span>
+        <button
+          type="button"
+          className="auth-link-button"
+          onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+        >
+          {mode === 'login' ? 'Zarejestruj się' : 'Zaloguj się'}
+        </button>
+      </div>
+
+      <p className="auth-policy">
+        Klikając “Zaloguj przez Steam”, akceptujesz naszą{' '}
+        <button type="button" className="auth-link-button">
+          Politykę Prywatności
+        </button>
+      </p>
     </form>
   );
 }
