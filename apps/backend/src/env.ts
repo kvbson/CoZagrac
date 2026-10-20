@@ -16,6 +16,8 @@ const envSchema = z.object({
   STEAM_API_KEY: z.string().min(1),
   SESSION_SECRET: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
+  FRONTEND_URL: z.string().default('http://localhost:5137'),
+  DB_SSL: z.enum(['verify', 'no-verify', 'disable']).default('verify'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
 });
 
