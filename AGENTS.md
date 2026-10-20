@@ -111,7 +111,11 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 
 ## Windows / środowisko
 - Praca w Git Bash. `.env` backendu: `DATABASE_URL`, `STEAM_API_KEY`, `SESSION_SECRET`,
-  `OPENAI_API_KEY`, `FRONTEND_URL` (przykłady: `.env.example`).
+  `OPENAI_API_KEY`, `FRONTEND_URL`, `DB_SSL` (przykłady: `.env.example`).
+- **DB przez tunel SSH** (dev na drugim komputerze: VPS → `localhost:5432`): TLS wyłącznie
+  przez `DB_SSL` (`disable` dla tunelu; `no-verify` dla self-signed na VPS). Parametry
+  `?ssl`/`?sslmode` w `DATABASE_URL` są w kodzie usuwane — `pg` nadpisuje nimi opcje z kodu
+  i przy tunelu robił się `DEPTH_ZERO_SELF_SIGNED_CERT` (patrz komentarz w `db/init.ts`).
 - Build backendu: `tsc -p tsconfig.build.json` — gdyby znów jadł RAM, przyczyną prawie zawsze
   jest duplikat zależności (patrz Złota zasada), nie rozmiar projektu.
 - Limity serwera: `server.timeout=70s` — synchroniczne `POST /user/me/embedding` przy dużej

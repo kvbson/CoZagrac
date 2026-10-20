@@ -99,7 +99,8 @@ Batchowe operacje synchronizacji (scripty jednorazowe, uruchamiane np. przez
 |---|---|
 | `NODE_ENV` | `development`/`production` |
 | `PORT` | port API (domyślnie 3001) |
-| `DATABASE_URL` | connection string PostgreSQL |
+| `DATABASE_URL` | connection string PostgreSQL (parametry `?ssl`/`?sslmode` są ignorowane) |
+| `DB_SSL` | TLS do bazy: `disable` / `no-verify` / `verify` (domyślnie dev=`disable`, prod=`verify`). Przy tunelu SSH na localhost ustaw `disable`; przy certyfikacie self-signed na VPS `no-verify` |
 | `STEAM_API_KEY` | klucz Steam Web API |
 | `SESSION_SECRET` | sekret sesji express-session |
 | `OPENAI_API_KEY` | klucz OpenAI (embeddings) |
