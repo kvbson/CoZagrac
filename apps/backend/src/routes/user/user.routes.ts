@@ -6,6 +6,10 @@ import {
   deleteUser,
   me,
 } from '../../controllers/users.controller.js';
+import {
+  getUserRecommendations,
+  regenerateUserEmbedding,
+} from '../../controllers/recommendation.controller.js';
 import { requireAuth, requireSameUserParam } from '../../middlewares/requireAuth.js';
 import { validate } from '../../utils/validate.js';
 import {
@@ -13,6 +17,7 @@ import {
   getUserHttpSchema,
   updateUserHttpSchema,
   deleteUserHttpSchema,
+  getUserRecommendationsHttpSchema,
 } from '@cozagrac/shared/contracts/api';
 
 const router = Router();
@@ -42,5 +47,16 @@ router.delete(
 );
 
 router.get('/me', requireAuth, me);
+
+// GET /user/me/recommendations?limit=&cursor=
+router.get(
+  '/me/recommendations',
+  requireAuth,
+  validate(getUserRecommendationsHttpSchema),
+  getUserRecommendations,
+);
+
+// POST /user/me/embedding - (re)build profile embedding from Steam library
+router.post('/me/embedding', requireAuth, regenerateUserEmbedding);
 
 export default router;

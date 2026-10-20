@@ -1,14 +1,14 @@
-import './env.js';
-import './auth/steam.js';
+import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-import cors from 'cors';
-import mainRouter from './routes/index.js';
-import { pool } from './db/init.js';
-import { checkDbConnection } from './db/utils/healthCheck.js';
-import { pgSession } from './db/sessions/index.js';
 import passport from 'passport';
+import './auth/steam.js';
 import { domain, frontendUrl, isDev, PORT } from './config/runtime.js';
+import { pool } from './db/init.js';
+import { pgSession } from './db/sessions/index.js';
+import { checkDbConnection } from './db/utils/healthCheck.js';
+import './env.js';
+import mainRouter from './routes/index.js';
 
 const app = express();
 

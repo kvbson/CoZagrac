@@ -101,3 +101,108 @@ export const createProviderHttpSchema = z.object({
 });
 
 export type CreateProviderInput = z.infer<typeof createProviderHttpSchema>['body'];
+
+/* =========================
+   RECOMMENDATIONS
+========================= */
+
+export const getUserRecommendationsHttpSchema = z.object({
+  query: z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+    cursor: z.coerce.number().optional(),
+  }),
+});
+
+export type GetUserRecommendationsQuery = z.infer<typeof getUserRecommendationsHttpSchema>['query'];
+
+export const recommendationItemSchema = z.object({
+  steamAppid: z.number(),
+  name: z.string(),
+  similarity: z.number(),
+  headerImage: z.string().nullable(),
+  isFree: z.boolean().nullable(),
+  priceFinalFormatted: z.string().nullable(),
+  priceDiscountPercent: z.number().nullable(),
+  reviewTier: z.string().nullable(),
+});
+
+export type RecommendationItem = z.infer<typeof recommendationItemSchema>;
+
+export type UserRecommendationsResponse = {
+  items: RecommendationItem[];
+  /** null gdy brak kolejnej strony; przekazaj jako ?cursor= przy następnym wywołaniu */
+  nextCursor: number | null;
+  /** false gdy użytkownik nie ma jeszcze profilu (embeddingu) */
+  hasEmbedding: boolean;
+};
+
+export type GenerateUserEmbeddingResponse = {
+  gamesUsed: number;
+};
+
+/* =========================
+   GAME DETAILS / SIMILAR / REVIEWS
+========================= */
+
+export type SimilarGamesResponse = {
+  items: RecommendationItem[];
+};
+
+/** odpowiedź GET /api/game?appId= - używane pola z game_info + relacje */
+export type GameDetailsResponse = {
+  steamAppid: number;
+  name: string;
+  shortDescription: string | null;
+  aboutTheGame: string | null;
+  releaseDate: string | null;
+  releaseComingSoon: boolean | null;
+  isFree: boolean | null;
+  requiredAge: number | null;
+  platformWindows: boolean | null;
+  platformMac: boolean | null;
+  platformLinux: boolean | null;
+  headerImage: string | null;
+  capsuleImage: string | null;
+  website: string | null;
+  appUrl: string | null;
+  priceCurrency: string | null;
+  priceFinalFormatted: string | null;
+  priceInitialFormatted: string | null;
+  priceDiscountPercent: number | null;
+  reviewTier: string | null;
+  genres: { id: string; name: string }[];
+  categories: { id: string; name: string }[];
+  publishers: { publisherId: number; name: string | null }[];
+  movies: { movieId: number; name: string | null; thumbnail: string | null; url: string | null }[];
+  screenshots: {
+    screenshotId: number;
+    pathThumbnail: string | null;
+    pathFull: string | null;
+  }[];
+};
+
+export type GameReviewsSort = 'newest' | 'highestRating' | 'popularity';
+
+/** jeden element GET /api/reviews/:steamAppid (anonymizowane - bez autorów) */
+export type GameReviewItem = {
+  steamAppid: number;
+  recommendationId: number;
+  review: string | null;
+  votedUp: boolean | null;
+  votesUp: number | null;
+  votesFunny: number | null;
+  weightedVoteScore: number | null;
+  playtimeForever: number;
+  steamPurchase: boolean | null;
+  commentCount: number | null;
+  reviewCreated: string | null;
+  language: string | null;
+};
+
+export type GameReviewsResponse = {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  items: GameReviewItem[];
+};

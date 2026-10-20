@@ -13,7 +13,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async ({ userId }: { userId: string }, done) => {
   const user = await userService.getById(userId);
-  done(null, user && { userId: user?.userId });
+  done(null, user && { userId: user.userId });
 });
 
 /* ========================
@@ -34,8 +34,7 @@ passport.use(
         const provider = await userService.getBySteamId(steamId);
 
         if (provider) {
-          const user = await userService.getById(provider.userId);
-          return done(null, user);
+          return done(null, { userId: provider.userId });
         }
         const user = await userService.create({
           email: null,

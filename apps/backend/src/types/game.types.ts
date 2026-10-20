@@ -1,4 +1,4 @@
-import { gameMovies, gamePublishers, gameScreenshots } from '../drizzle/schema.js';
+import { gameInfo, gameMovies, gamePublishers, gameScreenshots } from '../drizzle/schema.js';
 import { CreateGameInput } from '../schemas/game.zod.js';
 
 export type GamePayload = {
@@ -22,12 +22,8 @@ export type GamePayload = {
   }[];
 };
 
-export type GameInfoResult = {
-  steamAppid: number;
+export type GameInfoResult = typeof gameInfo.$inferSelect & {
   name: string;
-  shortDescription: string | null;
-  aboutTheGame: string | null;
-  releaseDate: string | null;
   genres: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   movies: (typeof gameMovies.$inferSelect)[];

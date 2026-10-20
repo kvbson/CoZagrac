@@ -3,12 +3,15 @@ import { EmailAuthForm } from '../features/auth/EmailAuthForm';
 
 export function AuthPage() {
   return (
-    <div>
-      <h1>Discover games you'll actually like</h1>
+    <div className="auth-page">
+      <h1>Discover games you&apos;ll actually like</h1>
+      <p className="muted">
+        Sign in and we will match you with your next favorite game based on what you play.
+      </p>
 
       <SteamButton />
 
-      <div>
+      <div className="auth-page__divider">
         <span>or</span>
       </div>
 

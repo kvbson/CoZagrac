@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne, notInArray, sql } from 'drizzle-orm';
 import { model, openAiClient } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { db } from '../db/init.js';
@@ -32,6 +32,31 @@ export const USER_LIMITS = {
 };
 
 export const ACTIVE_EMBEDDING_VERSION = 'v1';
+
+/** wspólny kształt wiersza-karty gry (kNN + join game_info) */
+type GameCardRow = {
+  steamAppid: number;
+  name: string | null;
+  similarity: number;
+  headerImage: string | null;
+  isFree: boolean | null;
+  priceFinalFormatted: string | null;
+  priceDiscountPercent: number | null;
+  reviewTier: string | null;
+};
+
+function toGameCardItem(r: GameCardRow) {
+  return {
+    steamAppid: r.steamAppid,
+    name: r.name ?? 'Unknown',
+    similarity: Number(r.similarity),
+    headerImage: r.headerImage ?? null,
+    isFree: r.isFree ?? null,
+    priceFinalFormatted: r.priceFinalFormatted ?? null,
+    priceDiscountPercent: r.priceDiscountPercent ?? null,
+    reviewTier: r.reviewTier ?? null,
+  };
+}
 
 export const embeddingService = {
   game: {
@@ -250,39 +275,54 @@ export const embeddingService = {
     },
 
     /**
-     * Find similar games to a given vector
+     * Find games with the closest embeddings to a given game (with card data).
      */
-    async findSimilar(embedding: number[], limit = 10) {
-      const safeLimit = Math.min(limit, 50);
-      const vectorSql = toPgVector(embedding);
-
-      const similarityExpr = sql<number>`
-  1 - (${gameEmbeddings.embedding} <=> ${vectorSql}::vector)
-`;
-      return db
-        .select({
-          steamAppid: gameEmbeddings.steamAppid,
-          similarity: similarityExpr,
-        })
-        .from(gameEmbeddings)
-        .orderBy(desc(similarityExpr))
-        .limit(safeLimit);
-    },
-
-    /**
-     * Find similar games to an existing game
-     */
-    async findSimilarToGame(steamAppid: number, limit = 10) {
-      const [row] = await db
+    async findSimilarToGame(steamAppid: number, limit = 8) {
+      const [source] = await db
         .select({ embedding: gameEmbeddings.embedding })
         .from(gameEmbeddings)
-        .where(eq(gameEmbeddings.steamAppid, steamAppid))
+        .where(
+          and(
+            eq(gameEmbeddings.steamAppid, steamAppid),
+            eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION),
+          ),
+        )
         .orderBy(desc(gameEmbeddings.createdAt))
         .limit(1);
 
-      if (!row) return [];
+      if (!source) return [];
 
-      return this.findSimilar(row.embedding, limit);
+      const safeLimit = Math.min(limit, 24);
+
+      // binding tablicy JS w surowym sql da serializację {1,2,3} (błędną dla pgvector) -
+      // dlatego jawnie do formatu wektora
+      const similarityExpr = sql<number>`
+    1 - (${gameEmbeddings.embedding} <=> ${toPgVector(source.embedding)}::vector)
+  `;
+
+      const rows = await db
+        .select({
+          steamAppid: gameEmbeddings.steamAppid,
+          name: gameInfo.name,
+          similarity: similarityExpr,
+          headerImage: gameInfo.headerImage,
+          isFree: gameInfo.isFree,
+          priceFinalFormatted: gameInfo.priceFinalFormatted,
+          priceDiscountPercent: gameInfo.priceDiscountPercent,
+          reviewTier: gameInfo.reviewTier,
+        })
+        .from(gameEmbeddings)
+        .innerJoin(gameInfo, eq(gameInfo.steamAppid, gameEmbeddings.steamAppid))
+        .where(
+          and(
+            eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION),
+            ne(gameEmbeddings.steamAppid, steamAppid),
+          ),
+        )
+        .orderBy(desc(similarityExpr))
+        .limit(safeLimit);
+
+      return rows.map(toGameCardItem);
     },
   },
 
@@ -300,7 +340,7 @@ export const embeddingService = {
       const steamId = provider?.steamId;
       if (!steamId) {
         logger.error('[USER_EMBEDDING] Missing steamId');
-        return;
+        return null;
       }
 
       const { response } = await ownedGamesEndpoint.getData(steamId);
@@ -308,7 +348,7 @@ export const embeddingService = {
 
       if (!ownedGames.length) {
         logger.warn('[USER_EMBEDDING] No owned games');
-        return;
+        return null;
       }
 
       const topGames = [...ownedGames]
@@ -362,7 +402,7 @@ export const embeddingService = {
 
       if (!gameEmbRows.length) {
         logger.warn('[USER_EMBEDDING] No game embeddings found');
-        return;
+        return null;
       }
 
       const vectors = gameEmbRows.map((r) => ({
@@ -388,14 +428,30 @@ export const embeddingService = {
         basedOnGames: gameEmbRows.length,
       });
 
-      return finalEmbedding;
+      return { embedding: finalEmbedding, gamesUsed: gameEmbRows.length };
     },
 
     /**
-     * Recommend games for a user
+     * Recommend games for a user (kNN against game embeddings).
+     * - excludes games already owned (Steam library),
+     * - only active game-embedding version,
+     * - cursor = similarity of the last returned item; next batch is below it.
+     * Returns null when the user has no profile embedding yet.
      */
-    async recommendGames(userId: string, limit = 50) {
-      const safeLimit = Math.min(limit, 100);
+    async recommendForUser(
+      userId: string,
+      { limit = 20, cursor }: { limit?: number; cursor?: number } = {},
+    ) {
+      const safeLimit = Math.min(limit, 50);
+
+      const [userEmb] = await db
+        .select({ embedding: userEmbeddings.embedding })
+        .from(userEmbeddings)
+        .where(eq(userEmbeddings.userId, userId))
+        .orderBy(desc(userEmbeddings.createdAt))
+        .limit(1);
+
+      if (!userEmb) return null;
 
       const [provider] = await db
         .select({ steamId: userProviders.providerUserId })
@@ -403,94 +459,43 @@ export const embeddingService = {
         .where(eq(userProviders.userId, userId))
         .limit(1);
 
-      const steamId = provider?.steamId;
-      if (!steamId) return [];
+      let ownedIds: number[] = [];
+      if (provider?.steamId) {
+        const { response } = await ownedGamesEndpoint.getData(provider.steamId);
+        ownedIds = response?.games?.map((g) => g.appid) ?? [];
+      }
 
-      const { response } = await ownedGamesEndpoint.getData(steamId);
-      const ownedIds = response?.games?.map((g) => g.appid) ?? [];
-
+      // jw. - embedding z bazy to number[]; do sql-a trzeba go w formacie wektora pgvector
       const similarityExpr = sql<number>`
-    1 - (
-      ${gameEmbeddings.embedding} <=> (
-        select ${userEmbeddings.embedding}
-        from ${userEmbeddings}
-        where ${userEmbeddings.userId} = ${userId}
-        order by ${userEmbeddings.createdAt} desc
-        limit 1
-      )
-    )
+    1 - (${gameEmbeddings.embedding} <=> ${toPgVector(userEmb.embedding)}::vector)
   `;
+
+      const conditions = [eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION)];
+      if (ownedIds.length) conditions.push(notInArray(gameEmbeddings.steamAppid, ownedIds));
+      if (cursor !== undefined) conditions.push(sql`(${similarityExpr}) < ${cursor}`);
 
       const rows = await db
         .select({
           steamAppid: gameEmbeddings.steamAppid,
-          similarity: similarityExpr,
-        })
-        .from(gameEmbeddings)
-        .where(
-          ownedIds.length
-            ? sql`${gameEmbeddings.steamAppid} not in (${sql.join(
-                ownedIds.map((id) => sql`${id}`),
-                sql`,`,
-              )})`
-            : undefined,
-        )
-        .orderBy(desc(similarityExpr))
-        .limit(safeLimit);
-
-      if (!rows.length) return [];
-
-      const infos = await db
-        .select({
-          id: gameInfo.steamAppid,
           name: gameInfo.name,
-        })
-        .from(gameInfo)
-        .where(
-          inArray(
-            gameInfo.steamAppid,
-            rows.map((r) => r.steamAppid),
-          ),
-        );
-
-      const infoMap = new Map(infos.map((info) => [info.id, info]));
-
-      return rows.map((row) => ({
-        id: row.steamAppid,
-        name: infoMap.get(row.steamAppid)?.name ?? 'Unknown',
-        similarity: row.similarity,
-      }));
-    },
-
-    /**
-     * Recommend games for a user
-     * next cursor - last item recommended for user, we want to get next batch below the cursor
-     */
-    async recommendGamesInfinite(userEmbedding: number[], limit = 20, cursor?: { score: number }) {
-      const safeLimit = Math.min(limit, 50);
-
-      const similarityExpr = sql<number>`
-    1 - (${gameEmbeddings.embedding} <=> ${userEmbedding})
-  `;
-
-      const whereClause = cursor ? sql`${similarityExpr} < ${cursor.score}` : undefined;
-
-      const rows = await db
-        .select({
-          steamAppid: gameEmbeddings.steamAppid,
-          score: similarityExpr,
+          similarity: similarityExpr,
+          headerImage: gameInfo.headerImage,
+          isFree: gameInfo.isFree,
+          priceFinalFormatted: gameInfo.priceFinalFormatted,
+          priceDiscountPercent: gameInfo.priceDiscountPercent,
+          reviewTier: gameInfo.reviewTier,
         })
         .from(gameEmbeddings)
-        .where(whereClause)
+        .innerJoin(gameInfo, eq(gameInfo.steamAppid, gameEmbeddings.steamAppid))
+        .where(and(...conditions))
         .orderBy(desc(similarityExpr))
         .limit(safeLimit);
 
-      const nextCursor = rows.length > 0 ? { score: rows[rows.length - 1].score } : null;
+      const items = rows.map(toGameCardItem);
 
-      return {
-        items: rows,
-        nextCursor,
-      };
+      const nextCursor = items.length === safeLimit ? items[items.length - 1].similarity : null;
+
+      return { items, nextCursor };
     },
   },
 };

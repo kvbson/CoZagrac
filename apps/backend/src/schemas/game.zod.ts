@@ -63,4 +63,13 @@ export const getGameInfoByAppIdHttpSchema = z.object({
 
 export type GetGameInfoByAppIdQuery = z.infer<typeof getGameInfoByAppIdHttpSchema>['query'];
 
+export const getSimilarGamesHttpSchema = z.object({
+  query: z.object({
+    appId: z.coerce.number(),
+    limit: z.coerce.number().int().min(1).max(24).default(8),
+  }),
+});
+
+export type GetSimilarGamesQuery = z.infer<typeof getSimilarGamesHttpSchema>['query'];
+
 export type CreateGameInput = z.infer<typeof createGameHttpSchema>['body'];
