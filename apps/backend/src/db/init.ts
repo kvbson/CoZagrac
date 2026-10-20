@@ -64,4 +64,11 @@ export const pool = new Pool({
   keepAliveInitialDelayMillis: 10000,
 });
 
+// Bez tego handlera błąd idle klienta (np. zerwany tunel SSH do bazy) to
+// nieobsłużone zdarzenie 'error' na EventEmitterze - zabija cały proces.
+// Wymóg z dokumentacji pg: https://node-postgres.com/apis/pool
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle database client:', err.message);
+});
+
 export const db = drizzle(pool, { schema });
