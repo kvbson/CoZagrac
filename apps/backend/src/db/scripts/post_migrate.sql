@@ -6,9 +6,8 @@
 -- AFTER the schema exists (drizzle-kit push/migrate). It is idempotent, so
 -- it is safe to re-run on every deploy.
 --
---   psql "$ADMIN_DATABASE_URL" -f apps/backend/src/db/scripts/post_migrate.sql
-
-\set ON_ERROR_STOP on
+-- Client-agnostic plain SQL: run with psql -f OR paste into pgAdmin/QEditor.
+-- The explicit transaction makes the whole script atomic.
 
 BEGIN;
 
@@ -28,9 +27,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_game_info_search_vector ON game_info;
-
-CREATE TRIGGER trg_game_info_search_vector
+-- CREATE OR REPLACE TRIGGER (PostgreSQL 14+): idempotent re-run without the
+-- "trigger does not exist, skipping" NOTICE that noisy clients (pgAdmin F5) choke on.
+CREATE OR REPLACE TRIGGER trg_game_info_search_vector
 BEFORE INSERT OR UPDATE
 ON game_info
 FOR EACH ROW

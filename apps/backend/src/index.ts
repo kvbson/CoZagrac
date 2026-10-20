@@ -8,6 +8,7 @@ import { dbSslMode, pool, redactedDatabaseUrl } from './db/init.js';
 import { pgSession } from './db/sessions/index.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
 import { env } from './env.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 import mainRouter from './routes/index.js';
 
 const app = express();
@@ -42,6 +43,9 @@ app.use(passport.session());
 
 // Routes
 app.use('/api', mainRouter);
+
+// Terminal error handler (must stay after all routes)
+app.use(errorHandler);
 
 // Start server
 async function startServer() {
