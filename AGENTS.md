@@ -89,6 +89,17 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 - `FRONTEND_URL` w `.env` backendu: redirecty po Steam OAuth + CORS. `domain` (runtime.ts) =
   returnURL dla Steama; w dev to `http://localhost:3001`.
 
+### Backend / zmienne środowiskowe
+- **Nie czytaj `process.env` w momencie oceny modułu** (stałe na górnej pozycji pliku,
+  argumenty `new X({...})` przy imporcie). Importy w `index.ts` są sortowane alfabetycznie
+  przez formattera, więc `./env.js` (dotenv) potrafi wykonać się **po** module, który już
+  policzył swoją stałą → ciche wartości produkcyjne (historycznie: `DB_SSL`/`isDev` = `verify`,
+  self-signed cert, zły `domain` Steam).
+- Zawsze `import { env } from '.../env.js'` i odczyt z `env` (zwalidowany zod). Graf importów
+  gwarantuje, że dotenv odpalił się przed importerem — niezależnie od sorter importów.
+- `env.ts` jest jedynym miejscem walidacji i ładowania `.env`; nowe zmienne dodawaj do
+  `envSchema`. Wyjątek: `drizzle.config.ts` (osobny proces CLI).
+
 ### Frontend
 - Stan serwera **tylko przez TanStack Query** (`useQuery`/`useInfiniteQuery`/`useMutation`).
   Ręczne fetch+useState w efekcie blokuje lint `react-hooks/set-state-in-effect` (v7, React Compiler).

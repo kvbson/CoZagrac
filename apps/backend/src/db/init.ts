@@ -1,7 +1,7 @@
 import * as schema from '../drizzle/schema.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { isDev } from '../config/runtime.js';
+import { env } from '../env.js';
 
 /**
  * TLS do bazy steruje WYŁĄCZNIE zmienna DB_SSL:
@@ -13,7 +13,7 @@ import { isDev } from '../config/runtime.js';
  * (Object.assign w pg/lib/connection-parameters.js), co przy tunelu SSH
  * dawało DEPTH_ZERO_SELF_SIGNED_CERT mimo ssl:false.
  */
-export const dbSslMode = process.env.DB_SSL || (isDev ? 'disable' : 'verify');
+export const dbSslMode = env.DB_SSL ?? (env.NODE_ENV === 'development' ? 'disable' : 'verify');
 
 const ssl =
   dbSslMode === 'disable'
@@ -38,7 +38,7 @@ function stripSslParams(raw: string): string {
 }
 
 function databaseUrl(): string {
-  return stripSslParams(process.env.DATABASE_URL ?? '');
+  return stripSslParams(env.DATABASE_URL);
 }
 
 /** connection string bez hasła - do logów diagnostycznych */

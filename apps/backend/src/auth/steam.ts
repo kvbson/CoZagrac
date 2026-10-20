@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as SteamStrategy } from 'passport-steam';
 import { userService } from '../services/user.service.js';
 import { domain } from '../config/runtime.js';
+import { env } from '../env.js';
 
 /* ========================
    Serialize / Deserialize
@@ -25,7 +26,7 @@ passport.use(
     {
       returnURL: `${domain}/api/auth/steam/callback`,
       realm: `${domain}/`,
-      apiKey: process.env.STEAM_API_KEY!,
+      apiKey: env.STEAM_API_KEY,
     },
     async (_identifier, profile, done) => {
       try {

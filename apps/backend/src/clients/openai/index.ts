@@ -1,4 +1,5 @@
 import OpenAI, { ClientOptions } from 'openai';
+import { env } from '../../env.js';
 import { logger } from '../../utils/logger.js';
 
 const openAiLogger: ClientOptions['logger'] = {
@@ -12,7 +13,7 @@ const openAiLogger: ClientOptions['logger'] = {
 };
 
 export const openAiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
   logger: openAiLogger,
 });
 
