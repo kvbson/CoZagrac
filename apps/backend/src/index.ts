@@ -12,6 +12,9 @@ import mainRouter from './routes/index.js';
 
 const app = express();
 
+// nginx trust
+app.set('trust proxy', 1);
+
 // Server configuration
 app.use(express.json());
 app.use(

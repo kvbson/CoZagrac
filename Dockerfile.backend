@@ -7,11 +7,14 @@ COPY apps/backend/package*.json ./apps/backend/
 COPY apps/frontend/package*.json ./apps/frontend/
 COPY apps/shared/package*.json ./apps/shared/
 
-RUN npm install
+RUN npm ci --workspace backend
 
 COPY . .
 
-RUN npm run build
+# shared contracts first, then backend (skip frontend build in this image)
+RUN npm run build -w @cozagrac/shared && npm run build -w backend
+
+ENV NODE_ENV=production
 
 EXPOSE 3001
 

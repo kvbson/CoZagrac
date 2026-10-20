@@ -109,11 +109,25 @@ Batchowe operacje synchronizacji (scripty jednorazowe, uruchamiane np. przez
 ## Deployment
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
-nginx (port 80) serwuje frontend i proxy-uje `/api` na backend — oba komponenty
-widoczne pod jedną domeną.
+nginx (port 80/443) serwuje frontend i proxy-uje `/api` na backend — oba komponenty
+widoczne pod jedną domeną. Baza **nie** jest częścią compose — zakłada PostgreSQL
+działający na hoście (VPS):
+
+- `DATABASE_URL` kontenera musi wskazywać hosta: `postgresql://user:***@host.docker.internal:5432/db`
+  (compose ustawia `extra_hosts: host.docker.internal:host-gateway`),
+- `DB_SSL=disable` (połączenie nie opuszcza maszyny),
+- PostgreSQL musi nasłuchiwać na interfejsie mostka Dockera i mieć regułę w
+  `pg_hba.conf` dla sieci dockera (np. `172.16.0.0/12`, `scram-sha-256`);
+  port 5432 nadal nie powinien być publikowany na zewnątrz,
+- sekrety produkcyjne w `apps/backend/.env` na serwerze (plik poza git, wskazany
+  przez `env_file` w compose).
+
+HTTPS: odkomentuj blok `listen 443 ssl` w `nginx/nginx.conf`, wystaw certyfikat
+certbotem na hoście (webroot → `nginx/webroot`, certyfikaty → `nginx/certs`).
+Login przez Steam wymaga HTTPS i tej samej domeny w ustawieniach klucza Steam API.
 
 ## Licencja
 
