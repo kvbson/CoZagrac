@@ -13,7 +13,7 @@ import { isDev } from '../config/runtime.js';
  * (Object.assign w pg/lib/connection-parameters.js), co przy tunelu SSH
  * dawało DEPTH_ZERO_SELF_SIGNED_CERT mimo ssl:false.
  */
-const dbSslMode = process.env.DB_SSL || (isDev ? 'disable' : 'verify');
+export const dbSslMode = process.env.DB_SSL || (isDev ? 'disable' : 'verify');
 
 const ssl =
   dbSslMode === 'disable'
@@ -22,16 +22,28 @@ const ssl =
       ? { rejectUnauthorized: false }
       : true;
 
+// regexp zamiast new URL(): hasła z @/# w connection stringu uniemożliwiają
+// poprawny parsowanie WHATWG, a fallback do surowego stringu przepuszczał sslmode
+function stripSslParams(raw: string): string {
+  const qIndex = raw.lastIndexOf('?');
+  if (qIndex === -1) return raw;
+
+  const base = raw.slice(0, qIndex);
+  const kept = raw
+    .slice(qIndex + 1)
+    .split('&')
+    .filter((param) => !/^ssl(mode)?=/i.test(param));
+
+  return kept.length ? `${base}?${kept.join('&')}` : base;
+}
+
 function databaseUrl(): string {
-  const raw = process.env.DATABASE_URL ?? '';
-  try {
-    const url = new URL(raw);
-    url.searchParams.delete('ssl');
-    url.searchParams.delete('sslmode');
-    return url.toString();
-  } catch {
-    return raw;
-  }
+  return stripSslParams(process.env.DATABASE_URL ?? '');
+}
+
+/** connection string bez hasła - do logów diagnostycznych */
+export function redactedDatabaseUrl(): string {
+  return databaseUrl().replace(/\/\/[^@/]*@/, '//***@');
 }
 
 export const pool = new Pool({

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import passport from 'passport';
 import './auth/steam.js';
 import { domain, frontendUrl, isDev, PORT } from './config/runtime.js';
-import { pool } from './db/init.js';
+import { dbSslMode, pool, redactedDatabaseUrl } from './db/init.js';
 import { pgSession } from './db/sessions/index.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
 import './env.js';
@@ -44,6 +44,7 @@ app.use('/api', mainRouter);
 async function startServer() {
   console.log(`[ENV] NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log(`[ENV] PORT: ${PORT}`);
+  console.log(`[DB] SSL mode: ${dbSslMode} | target: ${redactedDatabaseUrl()}`);
   const server = isDev ? app.listen(PORT, onSuccess) : app.listen(PORT, '0.0.0.0', onSuccess);
 
   try {
