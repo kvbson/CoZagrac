@@ -1,13 +1,11 @@
 -- Minimum grants for the CoZagrac application role (app_user).
 --
--- Bootstrap order on a fresh database (all scripts live in this folder):
+-- Bootstrap order on a fresh database (all scripts in this folder):
 --   1) createdb <db>                        (superuser)
 --   2) extensions.sql                       (superuser)
---   3) schema                               (drizzle-kit push/migrate, admin role)
+--   3) bootstrap_schema.sql                 (schema; admin role or superuser)
 --   4) post_migrate.sql                     (superuser or table owner)
---   5) grants.sql                           (this file, superuser):
---        psql "$ADMIN_DATABASE_URL" -v password='HASLO' \
---          -f apps/backend/src/db/scripts/grants.sql
+--   5) grants.sql                           (this file, superuser)
 --   6) verify.sql                           (read-only checklist)
 --
 -- Rationale (verified against the codebase):
@@ -22,10 +20,11 @@
 --  - app_user must NOT get CREATE on the public schema: migrations stay on
 --    the admin role.
 --
--- Note: without -v password=... psql fails here with
--- "no value found for parameter password" - that is the intended guard.
-
-\set ON_ERROR_STOP on
+-- Client-agnostic plain SQL. BEFORE RUNNING, replace every CHANGE_ME with the
+-- real app_user password (the literal CHANGE_ME is the reminder guard - never
+-- commit a real password into this file). Example psql run without putting the
+-- secret in shell history:
+--   sed "s/CHANGE_ME/$APP_USER_PASSWORD/g" grants.sql | psql "$ADMIN_DATABASE_URL" -f -
 
 BEGIN;
 
@@ -38,10 +37,10 @@ EXCEPTION WHEN duplicate_object THEN
 END
 $$;
 
-ALTER ROLE app_user LOGIN PASSWORD :'password';
+ALTER ROLE app_user LOGIN PASSWORD 'CHANGE_ME';
 
 -- 2) Schema usage + full DML on the application tables
---    (list = src/drizzle/schema.ts / 0000_special_mandroid.sql).
+--    (list = bootstrap_schema.sql, 18 tables).
 GRANT USAGE ON SCHEMA public TO app_user;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON
