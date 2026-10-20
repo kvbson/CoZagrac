@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import passport from 'passport';
+import { frontendUrl } from '../../../config/runtime.js';
 
 const router = Router();
 
@@ -8,10 +9,10 @@ router.get('/steam', passport.authenticate('steam'));
 router.get(
   '/steam/callback',
   passport.authenticate('steam', {
-    failureRedirect: 'http://localhost:5137/auth',
+    failureRedirect: `${frontendUrl}/auth`,
   }),
-  (req, res) => {
-    res.redirect('http://localhost:5137/');
+  (_req, res) => {
+    res.redirect(`${frontendUrl}/`);
   },
 );
 

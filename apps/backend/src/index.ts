@@ -8,7 +8,7 @@ import { pool } from './db/init.js';
 import { checkDbConnection } from './db/utils/healthCheck.js';
 import { pgSession } from './db/sessions/index.js';
 import passport from 'passport';
-import { domain, isDev, PORT } from './config/runtime.js';
+import { domain, frontendUrl, isDev, PORT } from './config/runtime.js';
 
 const app = express();
 
@@ -26,7 +26,7 @@ app.use(
 if (!isDev) {
   app.use(
     cors({
-      origin: [domain, 'http://localhost:5137'],
+      origin: [domain, frontendUrl],
       credentials: true,
     }),
   );

@@ -290,172 +290,14 @@ export const embeddingService = {
     /**
      * Generate and save user embeddings
      */
-    // async generateUserEmbedding(id: string, steamId?: string) {
-    //   if (!steamId) {
-    //     const user = await userService.getById(id);
-    //     const sId = user?.steamId;
-    //     if (!sId) {
-    //       logger.error('[USER_EMBEDDING] user misses steamId - connect steam account first.');
-    //       return;
-    //     }
-    //     steamId = sId;
-    //   }
-
-    //   const [{ response: owned }, { response: recent }] = await Promise.all([
-    //     ownedGamesEndpoint.getData(steamId),
-    //     recentlyPlayedEndpoint.getData(steamId),
-    //   ]);
-
-    //   const ownedGames = owned?.games ?? [];
-    //   const recentGames = recent?.games ?? [];
-
-    //   if (!ownedGames.length) {
-    //     TODO: if no game info about we can get info and generate embedding
-    //     logger.warn('[USER_EMBEDDING] No owned games – cannot generate embedding.');
-    //     return;
-    //   }
-
-    //   const topGames = [...ownedGames]
-    //     .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
-    //     .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
-
-    //   /**
-    //    * 1. Load game infos
-    //    */
-    //   let gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
-    //   let counter = 0;
-    //   gameInfos = gameInfos.map((info) => {
-    //     if (!info) counter++;
-    //     return info;
-    //   });
-    //   if (counter > 0) {
-    //     logger.warn(
-    //       `[USER_EMBEDDING] Missing game info for ${counter} owned games – they will be skipped.`,
-    //     );
-    //   }
-    //   gameInfos = gameInfos.filter((g): g is NonNullable<typeof g> => !!g);
-    //   /**
-    //    * 2. Aggregate genres & categories
-    //    */
-    //   const genres = uniqueLimited(
-    //     gameInfos.flatMap((g) => g?.genres ?? []),
-    //     USER_LIMITS.MAX_GENRES,
-    //     (g) => g.id,
-    //   ).map((g) => g.name);
-
-    //   const categories = uniqueLimited(
-    //     gameInfos.flatMap((g) => g?.categories ?? []),
-    //     USER_LIMITS.MAX_CATEGORIES,
-    //     (c) => c.id,
-    //   ).map((c) => c.name);
-
-    //   /**
-    //    * 3. Playstyle inference
-    //    */
-    //   const playstyleSignals: string[] = [];
-
-    //   const totalPlaytime = ownedGames.reduce((a, g) => a + (g.playtime_forever ?? 0), 0) / 60;
-
-    //   const recentPlaytime = recentGames.length
-    //     ? recentGames.reduce((a, g) => a + (g.playtime_2weeks ?? 0), 0) / 60
-    //     : 0;
-
-    //   if (recentPlaytime > 20) playstyleSignals.push('plays very frequently');
-    //   if (recentPlaytime < 2) playstyleSignals.push('plays occasionally');
-    //   if (totalPlaytime > 1000) playstyleSignals.push('hardcore gamer');
-
-    //   /**
-    //    * 4. CORE preference text (high signal)
-    //    */
-    //   const activitySummary = `
-    //       The user has played games for approximately ${Math.round(totalPlaytime)} hours in total
-    //       and played about ${Math.round(recentPlaytime)} hours in the last two weeks.
-    //   `.trim();
-    //   const preferenceText = [
-    //     buildUserPreferenceText({
-    //       genres,
-    //       categories,
-    //       topGames: topGames.map((g) => g.name).filter(Boolean),
-    //       playstyle: playstyleSignals,
-    //     }),
-    //     activitySummary,
-    //   ].join('\n\n');
-    //   /**
-    //    * 5. Games played text (simple, stable)
-    //    */
-    //   const gamesText = `
-    //         Games frequently played by the user:
-    //         ${topGames.map((g) => `- ${g.name}`).join('\n')}
-    //   `.trim();
-    //   logger.debug('[USER_EMBEDDINGS][INPUT]', {
-    //     userId: id,
-    //     ownedGames: ownedGames.length,
-    //     topGames: topGames.length,
-    //     genres: genres.length,
-    //     categories: categories.length,
-    //     playstyleSignals,
-    //     totalPlaytime: Math.round(totalPlaytime),
-    //     recentPlaytime: Math.round(recentPlaytime),
-    //   });
-    //   /**
-    //    * 6. Embeddings
-    //    */
-    //   const [preferenceRes, gamesRes] = await Promise.all([
-    //     openAiClient.embeddings.create({
-    //       model,
-    //       input: preferenceText,
-    //     }),
-
-    //     openAiClient.embeddings.create({
-    //       model,
-    //       input: gamesText,
-    //     }),
-    //   ]);
-
-    //   const preferenceVec = preferenceRes.data[0].embedding;
-    //   const gamesVec = gamesRes.data[0].embedding;
-
-    //   /**
-    //    * 7. Final user embedding
-    //    */
-    //   const finalEmbedding = l2Normalize(
-    //     weightedMean([
-    //       { vec: preferenceVec, weight: 0.7 },
-    //       { vec: gamesVec, weight: 0.3 },
-    //     ]),
-    //   );
-    //   logger.debug('[USER_EMBEDDINGS][VECTOR]', {
-    //     userId: id,
-    //     dimension: finalEmbedding.length,
-    //     normApprox: Math.sqrt(finalEmbedding.reduce((a, v) => a + v * v, 0)).toFixed(4),
-    //   });
-    //   /**
-    //    * 8. Persist
-    //    */
-    //   await db.transaction(async (tx) => {
-    //     await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, id));
-    //     await tx.insert(userEmbeddings).values({
-    //       userId: id,
-    //       embedding: finalEmbedding,
-    //       modelName: model,
-    //       embeddingVersion: ACTIVE_EMBEDDING_VERSION,
-    //     });
-    //   });
-    //   logger.info('[USER_EMBEDDINGS][SUMMARY]', {
-    //     userId: id,
-    //     embeddingVersion: ACTIVE_EMBEDDING_VERSION,
-    //     topGames: topGames.slice(0, 5).map((g) => g.name),
-    //     genres: genres.slice(0, 5),
-    //   });
-    //   return finalEmbedding;
-    // },
     async generateUserEmbedding(userId: string) {
-      const [{ steamId }] = await db
+      const [provider] = await db
         .select({ steamId: userProviders.providerUserId })
         .from(userProviders)
         .where(eq(userProviders.userId, userId))
         .limit(1);
 
+      const steamId = provider?.steamId;
       if (!steamId) {
         logger.error('[USER_EMBEDDING] Missing steamId');
         return;
@@ -475,34 +317,35 @@ export const embeddingService = {
       const gameInfos = await Promise.all(topGames.map((g) => gameService.getByAppId(g.appid)));
       const missingInfos: typeof topGames = [];
 
-      gameInfos.map((info, index) => {
+      for (const [index, info] of gameInfos.entries()) {
         const game = topGames[index];
         if (!game.appid) {
           logger.warn(`[USER_EMBEDDING] Owned game missing appid - skipping`, { game });
-          return info;
+          continue;
         }
         if (!info) {
           missingInfos.push(game);
         }
-        return info;
-      });
-
-      for (const { appid } of missingInfos) {
-        const syncResult = await syncGameInfo(appid);
-        if (!syncResult.success) {
-          logger.warn(
-            `[USER_EMBEDDING] Failed to sync game info for appId ${appid} - ${syncResult.reason}`,
-          );
-          continue;
-        }
       }
 
-      await syncReviewsForGames({ specificAppIds: missingInfos.map((g) => g.appid) });
+      if (missingInfos.length > 0) {
+        // TODO: jeśli gra nie ma opisu, można pobrać go z Steam i wygenerować embedding na bieżąco
+        for (const { appid } of missingInfos) {
+          const syncResult = await syncGameInfo(appid);
+          if (!syncResult.success) {
+            logger.warn(
+              `[USER_EMBEDDING] Failed to sync game info for appId ${appid} - ${syncResult.reason}`,
+            );
+            continue;
+          }
+        }
 
-      logger.warn(
-        //TODO: if no game info about we can get info and generate embedding
-        `[USER_EMBEDDING] Missing game info for ${missingInfos.length} owned games – they will be skipped.`,
-      );
+        await syncReviewsForGames({ specificAppIds: missingInfos.map((g) => g.appid) });
+
+        logger.warn(
+          `[USER_EMBEDDING] Missing game info for ${missingInfos.length} owned games – they will be skipped.`,
+        );
+      }
 
       const gameEmbRows = await db
         .select({
@@ -554,12 +397,13 @@ export const embeddingService = {
     async recommendGames(userId: string, limit = 50) {
       const safeLimit = Math.min(limit, 100);
 
-      const [{ steamId }] = await db
+      const [provider] = await db
         .select({ steamId: userProviders.providerUserId })
         .from(userProviders)
         .where(eq(userProviders.userId, userId))
         .limit(1);
 
+      const steamId = provider?.steamId;
       if (!steamId) return [];
 
       const { response } = await ownedGamesEndpoint.getData(steamId);

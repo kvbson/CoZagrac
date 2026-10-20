@@ -10,11 +10,13 @@
     "start": "node dist/src/index.js",
     "typecheck": "tsc --noEmit --watch",
     "schema_gen": "npx drizzle-kit introspect --config ./src/drizzle.config.ts",
-    "sql_gen": "npx drizzle-kit generate --config ./src/drizzle.config.ts"
+    "sql_gen": "npx drizzle-kit generate --config ./src/drizzle.config.ts",
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "dependencies": {
     "@cozagrac/shared": "*",
     "axios": "^1.13.2",
@@ -49,6 +51,7 @@
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }

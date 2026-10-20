@@ -18,9 +18,5 @@ export default defineConfig([
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
     },
-    parserOptions: {
-      project: ['./tsconfig.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
   },
 ]);

@@ -14,9 +14,7 @@ import {
   primaryKey,
   doublePrecision,
   date,
-  pgView,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 export const genres = pgTable(
   'genres',
@@ -455,9 +453,4 @@ export const gameReviews = pgTable(
     primaryKey({ columns: [table.steamAppid, table.recommendationId], name: 'game_reviews_pkey' }),
   ],
 );
-export const genreNamesForGameView = pgView('genre_names_for_game_view', {
-  steamAppid: integer('steam_appid'),
-  genres: varchar(),
-}).as(
-  sql`SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text`,
-);
+
