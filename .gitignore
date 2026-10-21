@@ -65,12 +65,6 @@ Desktop.ini
 coverage/
 
 # =========================
-# Deployment (nginx certs / certbot webroot on VPS)
-# =========================
-nginx/certs/
-nginx/webroot/
-
-# =========================
 # Misc
 # =========================
 .cache/

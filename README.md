@@ -30,7 +30,7 @@ Projekt inżynierski: **system rekomendacji treści z wykorzystaniem modeli
 | Baza      | PostgreSQL + pgvector (typ `vector(1536)`, indeksy HNSW), sesje w tabeli `sessions` |
 | AI        | OpenAI Embeddings API |
 | Integracje| Steam Web API + Steam Community API (OpenID) |
-| Deployment| Docker, docker-compose, nginx (reverse proxy `/` → frontend, `/api` → backend) |
+| Deployment| Docker, docker-compose; host nginx jako edge (`/` → frontend `:8081`, `/api` → backend `:3001`), Let's Encrypt; GitHub Actions (branch `dev`) |
 
 ## Architektura
 
@@ -108,26 +108,34 @@ Batchowe operacje synchronizacji (scripty jednorazowe, uruchamiane np. przez
 
 ## Deployment
 
+Edge stanowiska produkcyjnego stanowi **nginx zainstalowany na hoście** (VPS Ubuntu)
+z certyfikatem Let's Encrypt (`certbot --nginx`) — kontenery wystawiają porty
+**tylko na 127.0.0.1**: frontend `:8081`, backend `:3001`. Szablon vhosta:
+`nginx/co-zagrac.pl.conf` (do `sites-available`). Pełny runbook:
+`docs/wdrozenie_aplikacji_vps.md`; automatyzacja: push na branch `dev` →
+GitHub Actions (`verify` → `deploy` przez SSH → `scripts/deploy.sh`).
+
 ```bash
-docker compose up -d --build
+docker compose up -d --build     # na serwerze, w checkoutcie repo z apps/backend/.env
 ```
 
-nginx (port 80/443) serwuje frontend i proxy-uje `/api` na backend — oba komponenty
-widoczne pod jedną domeną. Baza **nie** jest częścią compose — zakłada PostgreSQL
-działający na hoście (VPS):
+Baza **nie** jest częścią compose — PostgreSQL działa na hoście (VPS):
 
-- `DATABASE_URL` kontenera musi wskazywać hosta: `postgresql://user:***@host.docker.internal:5432/db`
+- `DATABASE_URL` kontenera wskazuje hosta: `postgresql://user:***@host.docker.internal:5432/db`
   (compose ustawia `extra_hosts: host.docker.internal:host-gateway`),
 - `DB_SSL=disable` (połączenie nie opuszcza maszyny),
-- PostgreSQL musi nasłuchiwać na interfejsie mostka Dockera i mieć regułę w
+- PostgreSQL nasłuchuje też na interfejsie mostka Dockera i ma regułę w
   `pg_hba.conf` dla sieci dockera (np. `172.16.0.0/12`, `scram-sha-256`);
-  port 5432 nadal nie powinien być publikowany na zewnątrz,
+  port 5432 nie jest publikowany na zewnątrz,
 - sekrety produkcyjne w `apps/backend/.env` na serwerze (plik poza git, wskazany
   przez `env_file` w compose).
 
-HTTPS: odkomentuj blok `listen 443 ssl` w `nginx/nginx.conf`, wystaw certyfikat
-certbotem na hoście (webroot → `nginx/webroot`, certyfikaty → `nginx/certs`).
-Login przez Steam wymaga HTTPS i tej samej domeny w ustawieniach klucza Steam API.
+Bootstrap bazy (skrypty `apps/backend/src/db/scripts/`, czysty SQL — psql/pgAdmin):
+`CREATE DATABASE` → `extensions.sql` → `bootstrap_schema.sql` → `post_migrate.sql`
+→ `grants.sql` (rola `app_user`) → seed danych katalogowych z deva (`pg_dump
+--data-only`, patrz runbook) → `verify.sql`. Deploy **nie** wykonuje migracji
+schematu — to świadomy krok ręczny. Login przez Steam wymaga HTTPS i domeny
+`co-zagrac.pl` w ustawieniach klucza Steam API.
 
 ## Licencja
 

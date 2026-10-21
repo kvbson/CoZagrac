@@ -1,38 +1,18 @@
+# Edge is the HOST nginx (Ubuntu + certbot) - see docs/wdrozenie_aplikacji_vps.md.
+# Containers deliberately bind to loopback only; 80/443 belong to the host nginx
+# (vhost template: nginx/co-zagrac.pl.conf).
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # certyfikaty + webroot dla certbota (używane po włączeniu HTTPS; certyfikaty
-      # wystawiane na hoście trafiają tutaj)
-      - ./nginx/certs:/etc/nginx/certs:ro
-      - ./nginx/webroot:/var/www/certbot:ro
-    depends_on:
-      backend:
-        condition: service_healthy
-      frontend:
-        condition: service_healthy
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/nginx-health']
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    restart: unless-stopped
-
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    expose:
-      - '3001'
+    ports:
+      - '127.0.0.1:3001:3001'
     env_file:
       - ./apps/backend/.env
-    # PostgreSQL stoi na hoście (VPS), nie w compose — DATABASE_URL ma wskazywać
-    # host.docker.internal:5432 (patrz README sekcja „Deployment").
+    # PostgreSQL runs on the VPS host, not in compose - DATABASE_URL must point
+    # at host.docker.internal:5432 (DB_SSL=disable); see README and
+    # docs/wdrozenie_aplikacji_vps.md section 4.
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     healthcheck:
@@ -47,8 +27,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    expose:
-      - '80'
+    ports:
+      - '127.0.0.1:8081:80'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
       interval: 30s
