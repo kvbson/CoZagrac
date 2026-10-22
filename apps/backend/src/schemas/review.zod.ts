@@ -1,6 +1,7 @@
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { gameReviews } from '../drizzle/schema.js';
+import { gameReviewsLanguageSchema } from '@cozagrac/shared/contracts/api';
 
 // insert
 const insertReviewSchema = createInsertSchema(gameReviews).refine((data) => data.steamAppid, {
@@ -21,6 +22,7 @@ export const getGameReviewsHttpSchema = z.object({
     page: z.coerce.number().min(1).default(1),
     limit: z.coerce.number().min(1).max(100).default(20),
     sort: z.enum(['newest', 'highestRating', 'popularity']).default('newest'),
+    language: gameReviewsLanguageSchema.default('all'),
   }),
 });
 

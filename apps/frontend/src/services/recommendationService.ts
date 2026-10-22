@@ -1,5 +1,6 @@
 import type {
-  GenerateUserEmbeddingResponse,
+  RecommendationFilters,
+  UserEmbeddingStatusResponse,
   UserRecommendationsResponse,
 } from '@cozagrac/shared/contracts/api';
 import type { ServiceResponse } from '../types/response';
@@ -9,10 +10,26 @@ export const recommendationService = {
   getRecommendations: async (
     limit = 20,
     cursor?: number,
+    filters: RecommendationFilters = {},
   ): Promise<ServiceResponse<UserRecommendationsResponse>> => {
     const params = new URLSearchParams({ limit: String(limit) });
     if (cursor !== undefined) {
       params.set('cursor', String(cursor));
+    }
+    if (filters.isFree !== undefined) {
+      params.set('isFree', String(filters.isFree));
+    }
+    if (filters.minDiscount !== undefined) {
+      params.set('minDiscount', String(filters.minDiscount));
+    }
+    if (filters.minReviewTier !== undefined) {
+      params.set('minReviewTier', filters.minReviewTier);
+    }
+    if (filters.yearFrom !== undefined) {
+      params.set('yearFrom', String(filters.yearFrom));
+    }
+    if (filters.platform !== undefined) {
+      params.set('platform', filters.platform);
     }
 
     return fetchApi<UserRecommendationsResponse>(`/api/user/me/recommendations?${params.toString()}`, {
@@ -20,9 +37,14 @@ export const recommendationService = {
     });
   },
 
-  /** (Prze)budowuje embedding profilu na podstawie biblioteki Steam - synchronicznie, może potrwać */
-  buildProfile: async (): Promise<ServiceResponse<GenerateUserEmbeddingResponse>> =>
-    fetchApi<GenerateUserEmbeddingResponse>('/api/user/me/embedding', {
+  /** Starts (re)building the profile embedding - async job, poll getEmbeddingStatus */
+  buildProfile: async (): Promise<ServiceResponse<UserEmbeddingStatusResponse>> =>
+    fetchApi<UserEmbeddingStatusResponse>('/api/user/me/embedding', {
       method: 'POST',
+    }),
+
+  getEmbeddingStatus: async (): Promise<ServiceResponse<UserEmbeddingStatusResponse>> =>
+    fetchApi<UserEmbeddingStatusResponse>('/api/user/me/embedding/status', {
+      method: 'GET',
     }),
 };

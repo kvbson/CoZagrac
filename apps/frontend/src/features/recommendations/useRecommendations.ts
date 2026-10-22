@@ -1,7 +1,14 @@
 import { useCallback } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type {
+  RecommendationFilters,
   RecommendationItem,
+  UserEmbeddingStatusResponse,
   UserRecommendationsResponse,
 } from '@cozagrac/shared/contracts/api';
 import type { ServiceResponse } from '../../types/response';
@@ -32,19 +39,35 @@ function mergePages(pages: Page[]): RecommendationItem[] {
 }
 
 /**
- * Kursorowe (score-based) pobieranie rekomendacji + (prze)budowa profilu.
+ * Kursorowe (score-based) pobieranie rekomendacji + asynchroniczne
+ * (prze)budowywanie profilu: POST startuje job, a status jest odpytywany
+ * co 2 s dopóki job nie wróci jako done/failed.
  */
-export function useRecommendations() {
+export function useRecommendations(filters: RecommendationFilters) {
   const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
-    queryKey: ['recommendations'],
+    queryKey: ['recommendations', filters],
     initialPageParam: undefined as number | undefined,
-    queryFn: ({ pageParam }) => recommendationService.getRecommendations(PAGE_SIZE, pageParam),
+    queryFn: ({ pageParam }) =>
+      recommendationService.getRecommendations(PAGE_SIZE, pageParam, filters),
     getNextPageParam: (lastPage) => {
       if (!lastPage.success || !lastPage.userData) return undefined;
       return lastPage.userData.nextCursor ?? undefined;
     },
+  });
+
+  const statusQuery = useQuery({
+    queryKey: ['embedding-status'],
+    queryFn: async () => {
+      const res = await recommendationService.getEmbeddingStatus();
+      const data = res.userData;
+      if (data?.status === 'done') {
+        await queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      }
+      return data;
+    },
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? 2000 : false),
   });
 
   const pages = query.data?.pages ?? [];
@@ -60,12 +83,16 @@ export function useRecommendations() {
   const buildMutation = useMutation({
     mutationFn: async () => {
       const res = await recommendationService.buildProfile();
-      if (!res.success || !res.userData) {
-        throw new Error(res.error?.message ?? 'Could not build your profile');
+      if (!res.success) {
+        throw new Error(res.error?.message ?? 'Could not start building your profile');
       }
       return res.userData;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
+    onSuccess: (data) => {
+      // uruchamia pollowanie natychmiast po starcie joba
+      const status: UserEmbeddingStatusResponse = data ?? { status: 'running' };
+      queryClient.setQueryData(['embedding-status'], status);
+    },
   });
 
   const load = useCallback(() => query.refetch(), [query]);
@@ -83,14 +110,21 @@ export function useRecommendations() {
     }
   }, [buildMutation]);
 
+  const jobStatus = statusQuery.data?.status ?? 'idle';
+  const jobError =
+    statusQuery.data?.status === 'failed'
+      ? (statusQuery.data.message ?? 'Failed to build your profile')
+      : null;
+
   const status: Status = query.isPending ? 'loading' : firstError ? 'error' : 'ready';
-  const error = firstError ?? buildMutation.error?.message ?? null;
+  const error = firstError ?? buildMutation.error?.message ?? jobError;
 
   return {
     items,
     status,
     error,
-    building: buildMutation.isPending,
+    building: buildMutation.isPending || jobStatus === 'running',
+    gamesUsed: jobStatus === 'done' ? (statusQuery.data?.gamesUsed ?? null) : null,
     loadingMore: query.isFetchingNextPage,
     refreshing: query.isFetching,
     hasEmbedding,

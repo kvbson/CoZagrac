@@ -22,6 +22,10 @@ export function ReviewCard({ review }: { review: GameReviewItem }) {
 
         {review.votesUp ? <span className="muted">👍 {review.votesUp}</span> : null}
 
+        {review.votesFunny ? <span className="muted">😂 {review.votesFunny}</span> : null}
+
+        {review.commentCount ? <span className="muted">💬 {review.commentCount}</span> : null}
+
         {review.language && review.language !== 'english' ? (
           <span className="muted">{review.language}</span>
         ) : null}

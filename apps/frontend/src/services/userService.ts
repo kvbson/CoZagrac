@@ -1,6 +1,14 @@
-import type { LoginUserInput } from '@cozagrac/shared/contracts/api';
+import type {
+  LoginUserInput,
+  UserLibraryResponse,
+} from '@cozagrac/shared/contracts/api';
 import type { ServiceResponse } from '../types/response';
 import { fetchApi } from './utils';
+
+export type UserProfile = {
+  userId: string;
+  steamId: string | null;
+};
 
 export const userService = {
   checkAuth: async () => fetchApi<{ userId?: string }>('/api/user/me', { method: 'GET' }),
@@ -22,4 +30,23 @@ export const userService = {
     // względna ścieżka: dev -> proxy Vite na backend, prod -> ten sam origin (nginx /api)
     window.location.href = '/api/auth/steam';
   },
+
+  getById: async (userId: string): Promise<ServiceResponse<UserProfile>> =>
+    fetchApi<UserProfile>(`/api/user?id=${userId}`, { method: 'GET' }),
+
+  /** PATCH /api/user/:userId - email and/or password */
+  updateMe: async (
+    userId: string,
+    data: { email?: string; password?: string },
+  ): Promise<ServiceResponse<UserProfile>> =>
+    fetchApi<UserProfile>(`/api/user/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteMe: async (userId: string): Promise<ServiceResponse<null>> =>
+    fetchApi<null>(`/api/user/${userId}`, { method: 'DELETE' }),
+
+  getLibrary: async (): Promise<ServiceResponse<UserLibraryResponse>> =>
+    fetchApi<UserLibraryResponse>('/api/user/me/library', { method: 'GET' }),
 };

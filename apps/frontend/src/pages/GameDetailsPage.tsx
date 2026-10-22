@@ -1,9 +1,97 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import type { GameDetailsResponse } from '@cozagrac/shared/contracts/api';
 import { gameService } from '../services/gameService';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
 import { ReviewSection } from '../features/reviews/ReviewSection';
 import { stripHtml } from '../utils/html';
+
+type Movie = GameDetailsResponse['movies'][number];
+
+/** Steam movies: mp4 (movie.url) + miniatury; pierwszy odtwarzany po wejściu w sekcję */
+function TrailersSection({ movies }: { movies: Movie[] }) {
+  const withUrl = movies.filter((movie) => movie.url);
+  const [selected, setSelected] = useState<Movie | null>(withUrl[0] ?? null);
+
+  if (withUrl.length === 0) return null;
+
+  return (
+    <section>
+      <h2>Videos</h2>
+
+      {selected?.url && (
+        <video
+          className="game-video"
+          src={selected.url}
+          poster={selected.thumbnail ?? undefined}
+          controls
+          muted
+          loop
+          playsInline
+        />
+      )}
+
+      {withUrl.length > 1 && (
+        <div className="videos__strip">
+          {withUrl.map((movie) => (
+            <button
+              key={movie.movieId}
+              type="button"
+              className={`video-thumb${selected?.movieId === movie.movieId ? ' video-thumb--active' : ''}`}
+              onClick={() => setSelected(movie)}
+              aria-label={movie.name ?? 'Play video'}
+            >
+              {movie.thumbnail ? <img src={movie.thumbnail} alt="" loading="lazy" /> : movie.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RequirementsSection({ game }: { game: GameDetailsResponse }) {
+  const blocks = [
+    { title: 'Windows', minimum: game.pcMinimum, recommended: game.pcRecommended },
+    { title: 'macOS', minimum: game.macMinimum, recommended: game.macRecommended },
+    { title: 'Linux (SteamOS)', minimum: game.linuxMinimum, recommended: game.linuxRecommended },
+  ]
+    .map((block) => ({
+      title: block.title,
+      minimum: block.minimum ? stripHtml(block.minimum) : null,
+      recommended: block.recommended ? stripHtml(block.recommended) : null,
+    }))
+    .filter((block) => block.minimum || block.recommended);
+
+  if (blocks.length === 0) return null;
+
+  return (
+    <details className="sys-req">
+      <summary>System requirements</summary>
+
+      {blocks.map((block) => (
+        <div key={block.title} className="sys-req__block">
+          <h3>{block.title}</h3>
+
+          {block.minimum && (
+            <>
+              <h4>Minimum</h4>
+              <p className="pre-line">{block.minimum}</p>
+            </>
+          )}
+
+          {block.recommended && (
+            <>
+              <h4>Recommended</h4>
+              <p className="pre-line">{block.recommended}</p>
+            </>
+          )}
+        </div>
+      ))}
+    </details>
+  );
+}
 
 function PlatformBadges({
   windows,
@@ -127,13 +215,22 @@ export function GameDetailsPage() {
             </p>
           )}
 
-          {game.appUrl && (
-            <a href={game.appUrl} target="_blank" rel="noreferrer">
-              Open in Steam Store
-            </a>
-          )}
+          <div className="card__meta">
+            {game.appUrl && (
+              <a href={game.appUrl} target="_blank" rel="noreferrer">
+                Open in Steam Store
+              </a>
+            )}
+            {game.website && (
+              <a href={game.website} target="_blank" rel="noreferrer">
+                Official website
+              </a>
+            )}
+          </div>
         </div>
       </div>
+
+      <TrailersSection movies={game.movies} />
 
       {about.length > 0 && (
         <section className="game-about">
@@ -168,6 +265,8 @@ export function GameDetailsPage() {
           </div>
         </section>
       )}
+
+      <RequirementsSection game={game} />
 
       <ReviewSection steamAppid={game.steamAppid} />
 
