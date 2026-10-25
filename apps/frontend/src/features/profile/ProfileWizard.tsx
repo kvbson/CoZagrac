@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import type { UserEmbeddingStatusResponse } from '@cozagrac/shared/contracts/api';
+import type {
+  ProfileSource,
+  UserEmbeddingStatusResponse,
+} from '@cozagrac/shared/contracts/api';
 import type { BuildProfileInput } from '../recommendations/useRecommendations';
-import { useProfileWizard } from './useProfileWizard';
+import { useProfileWizard, type WizardStep } from './useProfileWizard';
 
 type ProfileWizardProps = {
   steamLinked: boolean;
@@ -22,6 +25,13 @@ const STEP_LABELS: Record<string, string> = {
   'steam-library': 'your Steam library (most played games)',
   'manual-games': 'the games you picked',
 };
+
+/** ścieżka Steam pomija krok wyboru gier: build jest tam krokiem 2 z 2 */
+function getStepNumber(step: WizardStep, source: ProfileSource | null): number {
+  if (step === 'source') return 1;
+  if (step === 'games') return 2;
+  return source === 'steam-library' ? 2 : 3;
+}
 
 export function ProfileWizard({
   steamLinked,
@@ -45,7 +55,7 @@ export function ProfileWizard({
 
   const searchItems = wizard.searchQuery.data?.userData?.items ?? [];
   const searching = wizard.searchQuery.isFetching && wizard.submitted !== '';
-  const stepNumber = wizard.step === 'source' ? 1 : wizard.step === 'games' ? 2 : 3;
+  const stepNumber = getStepNumber(wizard.step, wizard.source);
   const totalSteps = wizard.source === 'steam-library' ? 2 : 3;
 
   return (
@@ -164,7 +174,7 @@ export function ProfileWizard({
           <div className="wizard__nav">
             <Button onClick={wizard.back}>Back</Button>
             <Button
-              onClick={() => wizard.pickSource('manual-games')}
+              onClick={wizard.goBuild}
               disabled={!wizard.canBuild}
               title={
                 wizard.canBuild

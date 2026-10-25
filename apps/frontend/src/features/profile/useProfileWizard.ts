@@ -96,6 +96,9 @@ export function useProfileWizard(onBuild: (input: BuildProfileInput) => Promise<
     setStep(next === 'manual-games' ? 'games' : 'build');
   }, []);
 
+  /** games picked -> summary/build step */
+  const goBuild = useCallback(() => setStep('build'), []);
+
   const submitSearch = useCallback(
     (value: string) => {
       setSubmitted(value.trim());
@@ -136,6 +139,7 @@ export function useProfileWizard(onBuild: (input: BuildProfileInput) => Promise<
     isSelected,
     togglePicked,
     pickSource,
+    goBuild,
     submitSearch,
     startBuild,
     back,

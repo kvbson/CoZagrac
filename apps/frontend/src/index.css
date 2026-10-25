@@ -1,12 +1,43 @@
+/* ===== fonts (self-hosted, no CDN) ===== */
+@import '@fontsource-variable/inter';
+@import '@fontsource/chakra-petch/500.css';
+@import '@fontsource/chakra-petch/600.css';
+@import '@fontsource/chakra-petch/700.css';
+
+/* ===== design tokens =====
+   ciemny motyw inspirowany store.steampowered.com — bez wariantu jasnego,
+   tak jak Steam */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --font-display: 'Chakra Petch', 'Inter Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #1c232b;
+  --bg-deep: #171a21; /* navbar, najgłębsze tło */
+  --bg-page: #1b2838; /* tło strony */
+  --bg-panel: #16202d; /* karty, panele */
+  --bg-panel-2: #223347; /* pola, chipy, przyciski */
+  --bg-hover: #2a475e;
 
+  --text: #d9e3ec;
+  --text-soft: #a3b7c8;
+  --muted: #7f96ab;
+
+  --line: rgba(102, 192, 244, 0.16);
+  --line-strong: rgba(102, 192, 244, 0.38);
+
+  --accent: #66c0f4;
+  --accent-2: #45a7e6;
+  --accent-deep: #2b6d9c;
+  --glow: rgba(102, 192, 244, 0.25);
+
+  --green: #a4d007;
+  --green-deep: #6fae0e;
+  --sale: #ff485a;
+
+  color-scheme: dark;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  color: var(--text);
+  background-color: var(--bg-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,56 +48,126 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background:
+    radial-gradient(1100px 420px at 75% -140px, rgba(69, 167, 230, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--bg-page) 0%, #16202c 60%, var(--bg-deep) 100%);
+  background-attachment: fixed;
+}
+
+/* ===== typography ===== */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: #eef5fb;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #ffffff 0%, var(--accent) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h2 {
+  font-size: 1.4rem;
+  letter-spacing: 0.04em;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+strong {
+  color: #ffffff;
+  font-weight: 650;
+}
+
+p {
+  margin: 0.4em 0;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--accent);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #9fd9ff;
 }
 
-h1 {
-  font-size: 1.8em;
-  line-height: 1.1;
-}
+/* ===== controls ===== */
 
 button {
-  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 3px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  color: inherit;
+  padding: 0.55em 1.3em;
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--accent-deep), #1f4f74);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition:
+    filter 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 button:hover:not(:disabled) {
-  border-color: #646cff;
+  filter: brightness(1.25);
+  box-shadow: 0 0 14px var(--glow);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: default;
+  filter: grayscale(0.4);
 }
-button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--accent);
 }
 
 input {
+  font: inherit;
   width: 100%;
   padding: 0.55em 0.8em;
-  font-size: 1em;
-  font-family: inherit;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: #14181d;
-  color: inherit;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  color: var(--text);
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input::placeholder {
+  color: var(--muted);
+}
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+}
+
+select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.4em 0.7em;
 }
 
 /* ===== layout ===== */
@@ -77,25 +178,63 @@ input {
   align-items: center;
   gap: 16px;
   padding: 12px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background: #171d24;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #1b2836, var(--bg-deep));
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
 
 .navbar__brand {
-  font-size: 1.2em;
+  font-family: var(--font-display);
+  font-size: 1.35em;
   font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #ffffff, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+}
+
+.navbar__links a {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: 4px 2px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.navbar__links a:hover {
+  color: #ffffff;
+}
+.navbar__links a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.navbar__links button {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text-soft);
+}
+.navbar__links button:hover:not(:disabled) {
+  border-color: var(--sale);
+  color: var(--sale);
+  box-shadow: none;
 }
 
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px 24px;
 }
 
 .page__header {
@@ -141,14 +280,17 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
 }
 .auth-page__divider::before,
 .auth-page__divider::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--line);
 }
 
 /* ===== games ===== */
@@ -163,10 +305,16 @@ input {
 .card {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
+  background: linear-gradient(180deg, var(--bg-panel), #131c27);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 18px var(--glow), 0 10px 24px rgba(0, 0, 0, 0.45);
+  transform: translateY(-2px);
 }
 
 .card__img {
@@ -179,8 +327,8 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.4);
+  background: rgba(102, 192, 244, 0.06);
+  color: var(--muted);
 }
 
 .card__body {
@@ -192,8 +340,15 @@ input {
 
 .card__body h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.98rem;
+  letter-spacing: 0.02em;
   line-height: 1.3;
+}
+.card__body h3 a {
+  color: #eef5fb;
+}
+.card__body h3 a:hover {
+  color: var(--accent);
 }
 
 .card__meta {
@@ -203,26 +358,33 @@ input {
 }
 
 .badge {
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
   padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  background: rgba(102, 192, 244, 0.12);
 }
 .badge--match {
-  background: #2f7d4f;
+  background: linear-gradient(180deg, #3f7f12, #2c5a0c);
+  color: #eaffc7;
 }
 .badge--sale {
-  background: #b8563e;
+  background: var(--sale);
+  color: #ffffff;
 }
 
 /* ===== states ===== */
 
 .error {
-  color: #ff8f8f;
+  color: #ff8a94;
 }
 
 .muted {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--muted);
 }
 
 /* ===== game details ===== */
@@ -237,7 +399,8 @@ input {
 .game-hero__img {
   width: 100%;
   max-width: 460px;
-  border-radius: 10px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
   display: block;
 }
 
@@ -254,15 +417,21 @@ input {
 }
 
 .badge--genre {
-  background: rgba(100, 108, 255, 0.25);
+  background: rgba(69, 167, 230, 0.22);
+  color: #bfe4fb;
 }
 .badge--negative {
-  background: #8a3b3b;
+  background: rgba(255, 72, 90, 0.22);
+  color: #ffb9c0;
+}
+
+.game-about {
+  margin-top: 28px;
 }
 
 .game-about__text {
   white-space: pre-line;
-  opacity: 0.9;
+  color: var(--text-soft);
 }
 
 .shots {
@@ -274,7 +443,8 @@ input {
 
 .shots__img {
   height: 130px;
-  border-radius: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
   display: block;
 }
 
@@ -292,15 +462,16 @@ input {
 }
 
 .review-card {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 12px 16px;
+  background: rgba(22, 32, 45, 0.7);
 }
 .review-card--up {
-  border-left: 3px solid #2f7d4f;
+  border-left: 3px solid var(--green-deep);
 }
 .review-card--down {
-  border-left: 3px solid #8a3b3b;
+  border-left: 3px solid var(--sale);
 }
 
 .review-card__meta {
@@ -308,87 +479,17 @@ input {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
   margin-bottom: 8px;
 }
 
 .review-card__text {
   margin: 0;
   white-space: pre-line;
-}
-
-select {
-  font: inherit;
-  color: inherit;
-  background: #14181d;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 0.4em 0.7em;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #f5f6f8;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-  input {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.15);
-  }
-  .navbar {
-    background: #ffffff;
-    border-bottom-color: rgba(0, 0, 0, 0.1);
-  }
-  .card {
-    border-color: rgba(0, 0, 0, 0.1);
-    background: #ffffff;
-  }
-  .card__img--empty {
-    background: rgba(0, 0, 0, 0.05);
-    color: rgba(0, 0, 0, 0.4);
-  }
-  .badge {
-    background: rgba(0, 0, 0, 0.08);
-  }
-  .badge--match {
-    background: #d3ecd9;
-  }
-  .badge--sale {
-    background: #f3ddd3;
-  }
-  .error {
-    color: #c62828;
-  }
-  .muted {
-    color: rgba(0, 0, 0, 0.55);
-  }
-  .badge--genre {
-    background: #e0e2ff;
-  }
-  .badge--negative {
-    background: #f0d4d4;
-  }
-  .review-card {
-    border-color: rgba(0, 0, 0, 0.1);
-    background: #ffffff;
-  }
-  .wizard__option {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.12);
-  }
-  .wizard__option p {
-    color: rgba(0, 0, 0, 0.6);
-  }
-  select {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.15);
-  }
+  color: var(--text-soft);
 }
 
 /* ---- search in navbar ---- */
@@ -422,24 +523,41 @@ select {
 }
 
 .filters__label {
-  font-size: 0.85rem;
-  opacity: 0.7;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .chip {
-  border: 1px solid var(--border, #444);
+  font-family: var(--font-display);
+  border: 1px solid var(--line);
   background: transparent;
   border-radius: 999px;
   padding: 3px 12px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  color: var(--text-soft);
   cursor: pointer;
+  box-shadow: none;
+}
+.chip:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .chip--active {
-  background: #66c0f4;
-  color: #1b2838;
-  border-color: #66c0f4;
-  font-weight: 600;
+  background: var(--accent);
+  color: #10222f;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.chip--active:hover:not(:disabled) {
+  color: #10222f;
 }
 
 /* ---- profile source wizard ---- */
@@ -452,24 +570,34 @@ select {
 
 .wizard__option {
   text-align: left;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 16px;
+  background: linear-gradient(180deg, var(--bg-panel), #131c27);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 18px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1rem;
 }
 
 .wizard__option:hover {
-  border-color: #66c0f4;
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--glow);
+  filter: none;
 }
 
 .wizard__option h3 {
   margin: 0 0 6px;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .wizard__option p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-soft);
 }
 
 .wizard__picked {
@@ -502,7 +630,7 @@ select {
 .game-video {
   width: 100%;
   max-width: 720px;
-  border-radius: 8px;
+  border-radius: 4px;
   margin-bottom: 10px;
   background: #000;
 }
@@ -516,7 +644,7 @@ select {
 .video-thumb {
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: 4px;
   background: none;
   cursor: pointer;
   max-width: 160px;
@@ -529,21 +657,25 @@ select {
 }
 
 .video-thumb--active {
-  border-color: #66c0f4;
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--glow);
 }
 
 /* ---- game details: system requirements ---- */
 .sys-req {
   margin: 20px 0;
-  border: 1px solid var(--border, #333);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 10px 16px;
+  background: rgba(22, 32, 45, 0.7);
 }
 
 .sys-req > summary {
   cursor: pointer;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.1rem;
+  letter-spacing: 0.03em;
 }
 
 .sys-req h3 {
@@ -553,7 +685,7 @@ select {
 .sys-req h4 {
   margin: 8px 0 2px;
   font-size: 0.9rem;
-  opacity: 0.8;
+  color: var(--text-soft);
 }
 
 .pre-line {
@@ -568,8 +700,9 @@ select {
   max-width: 380px;
   margin: 24px 0;
   padding: 16px;
-  border: 1px solid var(--border, #333);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(22, 32, 45, 0.7);
 }
 
 .account__form h2 {
@@ -578,7 +711,10 @@ select {
 }
 
 .account__form--danger {
-  border-color: #a33;
+  border-color: rgba(255, 72, 90, 0.5);
+}
+.account__form--danger button {
+  background: linear-gradient(180deg, #b32d3c, #7e1f2b);
 }
 
 /* ---- reviews filters row ---- */
