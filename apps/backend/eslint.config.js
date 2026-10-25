@@ -13,6 +13,9 @@ export default defineConfig([
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: globals.node,
+      parserOptions: {
+        tsconfigRootDir: dirname,
+      },
     },
     rules: {
       'no-console': 'off',

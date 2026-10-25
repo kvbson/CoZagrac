@@ -21,6 +21,9 @@ export default defineConfig([
       ecmaVersion: 'latest',
       sourceType: 'module',
       globals: globals.browser,
+      parserOptions: {
+        tsconfigRootDir: dirname,
+      },
     },
   },
 ]);
