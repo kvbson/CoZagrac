@@ -18,4 +18,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3001
 
-CMD ["node", "apps/backend/dist/src/index.js"]
+CMD ["node", "apps/backend/dist/index.js"]

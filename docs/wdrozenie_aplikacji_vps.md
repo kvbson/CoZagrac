@@ -281,7 +281,7 @@ w dokumentacji procesu).
 
 - **Rollback:** `git -C /opt/cozagrac reset --hard <poprzedni-commit> && docker compose up -d --build`; logi `docker compose logs --tail=100 backend`
 - **Aktualizacja katalogu na prod** (na co dzień, nie pełny seed):
-  `docker compose exec backend node dist/src/functions/sync/<skrypt>.js`
+  `docker compose exec backend node dist/functions/sync/<skrypt>.js`
 - **Backup proda (cron):** `pg_dump -Fc co_zagrac_prod` z retencją
 - **Zasada migracji:** deploy NIE dotyka bazy; schemat = skrypt + `verify.sql` ręcznie
 - **Znane TBD:** cron synchronizacji katalogu (P2), monitoring/up-time (P2)
