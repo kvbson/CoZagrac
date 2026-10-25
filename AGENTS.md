@@ -135,7 +135,7 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
   `extensions.sql` → `bootstrap_schema.sql` → `post_migrate.sql` → `grants.sql` → `verify.sql`
   (trigger `search_vector` utrzymuje `post_migrate.sql` — drizzle nim nie zarządza).
   `postgre_schema.sql` to legacy z dryfem — nie tworzyć na nim baz.
-  Prod: VPS, baza `co_zagrac_db_prod`, rola aplikacji `app_user` (tylko DML, bez DDL);
+  Prod: VPS, baza `co_zagrac_prod`, rola aplikacji `app_user` (tylko DML, bez DDL);
   procedura wdrożeniowa: `docs/wdrozenie_aplikacji_vps.md`.
 - `apps/backend/src/drizzle/schema.ts` jest **generowany introspekcją**:
   `npm run schema_gen -w backend` (uwaga: `tsvector` jest mapowany na text z TODO).

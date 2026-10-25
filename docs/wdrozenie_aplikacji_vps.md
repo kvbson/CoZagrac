@@ -8,7 +8,7 @@
 > `konfiguracja_vps_nginx_lets_encrypt.md`. Uzgodnione decyzje: edge = **systemowy
 > nginx na hoście** (Opcja A), **jeden użytkownik bazodanowy** `app_user`
 > (wariant 1 grantów), **źródło deploya: branch `dev`**, domena
-> `https://co-zagrac.pl`, baza produkcyjna **`co_zagrac_db_prod`**,
+> `https://co-zagrac.pl`, baza produkcyjna **`co_zagrac_prod`**,
 > **baza dev i prod w tej samej instancji PostgreSQL na VPS** (dostęp przez
 > pgAdmin), **migracja danych katalogu z embeddingami przez pgAdmin**
 > (postgres_fdw), dane użytkowników na prod startują pusto.
@@ -20,7 +20,7 @@ Internet ──443/80──> host nginx (Ubuntu, certbot Let's Encrypt)
                        ├─ location /     → http://127.0.0.1:8081   (kontener frontend: nginx+SPA)
                        └─ location /api  → http://127.0.0.1:3001   (kontener backend: Express)
 kontenery (docker compose, porty tylko na 127.0.0.1)
-  backend ──TCP 5432──> host.docker.internal → PostgreSQL (host): dev + co_zagrac_db_prod
+  backend ──TCP 5432──> host.docker.internal → PostgreSQL (host): dev + co_zagrac_prod
 ```
 
 | Komponent | Bind | Uwagi |
@@ -38,10 +38,9 @@ kontenery (docker compose, porty tylko na 127.0.0.1)
 - [x] Baza dev istnieje na VPS (nazwa `<dev_db>` — uzupelnić), połączenia w pgAdmin
 - [x] Certyfikat Let's Encrypt `co-zagrac.pl` WYSTAWIONY (certbot plugin nginx;
       konfiguracja obecnie w `sites-available/default` — do przeniesienia §7)
-- [ ] **Docker** — instalacja z repo Ubuntu (`docker.io` + `docker-compose-v2`, §3);
-      do potwierdzenia `docker compose version` i hello-world
-- [ ] pg_hba dla sieci dockera (§4.3)
-- [ ] Baza prod `co_zagrac_db_prod` → Faza 2
+- [x] **Docker** — zainstalowany z repo Ubuntu (`docker.io` + `docker-compose-v2`, §3)
+- [x] pg_hba + reguła ufw dla sieci dockera (§4.3) — test z kontenera: `app_user | co_zagrac_prod` ✓
+- [x] Baza prod `co_zagrac_prod` **utworzona** → bootstrap skryptami §4.2
 
 ## 3. Faza 1 — instalacja Dockera na Ubuntu (SSH, sudo)
 
@@ -62,9 +61,9 @@ docker run --rm hello-world
 ### 4.1 Utworzenie bazy
 W Query Tool na bazie **`postgres`** (nie na docelowej!):
 ```sql
-CREATE DATABASE co_zagrac_db_prod;
+CREATE DATABASE co_zagrac_prod;
 ```
-Następnie **połącz się z `co_zagrac_db_prod`** — wszystkie poniższe kroki
+Następnie **połącz się z `co_zagrac_prod`** — wszystkie poniższe kroki
 wykonuj w Query Tool na tym połączeniu (pliki: `apps/backend/src/db/scripts/`).
 
 ### 4.2 Skrypty bootstrapu (kolejność, każdy osobno: Otwórz plik → Execute)
@@ -84,15 +83,24 @@ Edycja plików na hoście (SSH/sudo):
   podzakresu (172.18/172.19...), i połączenie z kontenera padnie. `*` jest
   bezpieczne, bo 5432 i tak nie jest publikowane (brak reguły w ufw/panelu OVH),
   a dopuszcza tylko reguła `pg_hba` poniżej;
-- `pg_hba.conf`: `host co_zagrac_db_prod app_user 172.16.0.0/12 scram-sha-256`
+- `pg_hba.conf`: `host co_zagrac_prod app_user 172.16.0.0/12 scram-sha-256`
   (zakres 172.16–172.31 obejmuje domyślne podsieci dockera; jeśli sieci wyjdą
   spoza niego — dopisz konkretną podsieć z `docker network inspect`);
-- restart: `sudo systemctl restart postgresql`.
+- restart: `sudo systemctl restart postgresql`;
+- **ufw** (VPS ma `active` + `deny (incoming)`): ruch kontener→host wpada w
+  łańcuch INPUT i byłby po cichu zrzucany mimo zgody `pg_hba`:
+  `sudo ufw allow from 172.16.0.0/12 to any port 5432 proto tcp comment 'containers -> postgres'`
+  (internet nadal bez dostępu — default deny; pg_hba i tak wpuszcza tylko `app_user`);
+- **weryfikacja TYLKO z kontenera** (test z hosta na `172.17.0.1` jest
+  miarodajny — kernel przy własnej bramce mostka podmienia źródło na publiczny
+  IP i `pg_hba` słusznie odrzuca; liczy się ścieżka jak z compose):
+  `docker run --rm ubuntu:24.04 bash -c "apt-get update -qq >/dev/null && apt-get install -y -qq postgresql-client >/dev/null && PGPASSWORD='<hasło>' psql -h 172.17.0.1 -U app_user co_zagrac_prod -c 'select current_user, current_database();'"`
+  (wykonane 25.10: `app_user | co_zagrac_prod` ✓)
 
 ## 5. Faza 3 — migracja danych katalogu (pgAdmin, postgres_fdw)
 
 Obie bazy są w jednej instancji, więc przenosimy dane **SQL-em**, z
-uruchomionego na `co_zagrac_db_prod` Query Tool. Zakres: `genres,
+uruchomionego na `co_zagrac_prod` Query Tool. Zakres: `genres,
 categories, tags, game_info, game_genres, game_categories, game_screenshots,
 game_movies, game_publishers, game_reviews, game_embeddings`.
 **Nie przenosimy:** `users, user_providers, sessions, user_embeddings,
@@ -107,7 +115,7 @@ FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC;
 Przy kilkunastu mln wierszy `game_reviews` czas liczyć w minutach–kilkunastu
 minutach (fdw batchuje); gdyby było za wolne — wariant awaryjny §5.4.
 
-### 5.1 Mostek (Query Tool na `co_zagrac_db_prod`, jako superuser):
+### 5.1 Mostek (Query Tool na `co_zagrac_prod`, jako superuser):
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 CREATE SERVER dev_srv FOREIGN DATA WRAPPER postgres_fdw
@@ -161,7 +169,7 @@ pg_dump -U postgres <dev_db> --data-only -Fc \
   --table=game_genres --table=game_categories --table=game_screenshots \
   --table=game_movies --table=game_publishers --table=game_reviews \
   --table=game_embeddings -f /tmp/seed_catalog.dump
-pg_restore -U postgres -d co_zagrac_db_prod --data-only --single-transaction /tmp/seed_catalog.dump
+pg_restore -U postgres -d co_zagrac_prod --data-only --single-transaction /tmp/seed_catalog.dump
 ```
 (Uwaga: devowa `game_embeddings` może mieć starsze wersje embeddingów —
 na prod i tak liczy się `ACTIVE_EMBEDDING_VERSION`; oba przechodzą.)
@@ -178,11 +186,14 @@ git clone -b dev https://github.com/kvbson/CoZagrac /opt/cozagrac
 # apps/backend/.env (chmod 600):
 #   NODE_ENV=production
 #   PORT=3001
-#   DATABASE_URL=postgresql://app_user:<HASLO>@host.docker.internal:5432/co_zagrac_db_prod
+#   DATABASE_URL=postgresql://app_user:<HASLO>@host.docker.internal:5432/co_zagrac_prod
 #   DB_SSL=disable
 #   SESSION_SECRET=<openssl rand -hex 32>
 #   OPENAI_API_KEY / STEAM_API_KEY  (klucze produkcyjne)
 #   FRONTEND_URL=https://co-zagrac.pl
+#   Zmienne limitów mają domyślne wartości w kodzie (env.ts) i NIE są wymagane:
+#   OPENAI_TOKENS_USER_DAY=2M, OPENAI_TOKENS_GLOBAL_DAY=10M,
+#   USER_PROFILE_BUILDS_PER_DAY=4, USAGE_RETENTION_DAYS=90
 cd /opt/cozagrac && docker compose up -d --build
 curl -fsS http://127.0.0.1:3001/api/health && echo OK
 docker compose ps      # dwoje: healthy
@@ -271,7 +282,7 @@ w dokumentacji procesu).
 - **Rollback:** `git -C /opt/cozagrac reset --hard <poprzedni-commit> && docker compose up -d --build`; logi `docker compose logs --tail=100 backend`
 - **Aktualizacja katalogu na prod** (na co dzień, nie pełny seed):
   `docker compose exec backend node dist/src/functions/sync/<skrypt>.js`
-- **Backup proda (cron):** `pg_dump -Fc co_zagrac_db_prod` z retencją
+- **Backup proda (cron):** `pg_dump -Fc co_zagrac_prod` z retencją
 - **Zasada migracji:** deploy NIE dotyka bazy; schemat = skrypt + `verify.sql` ręcznie
 - **Znane TBD:** cron synchronizacji katalogu (P2), monitoring/up-time (P2)
 
