@@ -503,7 +503,7 @@ export const embeddingService = {
       if (filters.yearFrom !== undefined)
         // release_date is free-form text like "19 Nov, 2021"; take the first 4-digit year
         conditions.push(
-          sql`substring(${gameInfo.releaseDate} from '\d{4}')::int >= ${filters.yearFrom}`,
+          sql`substring(${gameInfo.releaseDate} from '[0-9]{4}')::int >= ${filters.yearFrom}`,
         );
       if (filters.platform) conditions.push(eq(PLATFORM_COLUMNS[filters.platform], true));
 
