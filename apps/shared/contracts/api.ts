@@ -60,6 +60,12 @@ export type UpdateUserBodyWithHash = Omit<UpdateUserBody, 'password'> & {
    GET USER
 ========================= */
 
+/** GET /user/me - session check; steamLinked drives the profile-source wizard */
+export type MeResponse = {
+  userId: string;
+  steamLinked: boolean;
+};
+
 export const getUserQuerySchema = z
   .object({
     id: z.uuid().optional(),
@@ -161,6 +167,50 @@ export type UserRecommendationsResponse = {
   hasEmbedding: boolean;
 };
 
+/* =========================
+   PROFILE SOURCE & FAVORITE GAMES
+   The user picks what recommendations are built from: their Steam library
+   (top games by playtime) or a manually selected set of favorite games.
+   The manual set is persisted in user_favorite_games and is also excluded
+   from recommendation results (the user already knows those games).
+========================= */
+
+export const profileSourceSchema = z.enum(['steam-library', 'manual-games']);
+export type ProfileSource = z.infer<typeof profileSourceSchema>;
+
+export const MIN_FAVORITE_GAMES = 5;
+export const MAX_FAVORITE_GAMES = 50;
+
+export const buildUserEmbeddingHttpSchema = z.object({
+  body: z.object({
+    source: profileSourceSchema,
+  }),
+});
+
+export type BuildUserEmbeddingBody = z.infer<typeof buildUserEmbeddingHttpSchema>['body'];
+
+export const setUserFavoritesHttpSchema = z.object({
+  body: z.object({
+    appIds: z
+      .array(z.number().int().positive())
+      .min(MIN_FAVORITE_GAMES)
+      .max(MAX_FAVORITE_GAMES)
+      .transform((ids) => [...new Set(ids)]),
+  }),
+});
+
+export type SetUserFavoritesBody = z.infer<typeof setUserFavoritesHttpSchema>['body'];
+
+export type UserFavoriteGame = {
+  steamAppid: number;
+  name: string;
+  headerImage: string | null;
+};
+
+export type UserFavoritesResponse = {
+  items: UserFavoriteGame[];
+};
+
 /**
  * POST /user/me/embedding is asynchronous now: it starts a job and returns
  * 202 with status 'running'; poll GET /user/me/embedding/status until
@@ -171,6 +221,8 @@ export type UserEmbeddingStatusResponse = {
   status: 'idle' | 'running' | 'done' | 'failed';
   gamesUsed?: number;
   message?: string;
+  /** source the finished profile was built from (set when status === 'done') */
+  source?: ProfileSource;
 };
 
 /* =========================

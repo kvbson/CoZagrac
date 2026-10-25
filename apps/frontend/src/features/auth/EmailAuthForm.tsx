@@ -35,7 +35,7 @@ export function EmailAuthForm() {
     // backend ustawia sesję przy login/rejestracji - pobierz zalogowanego użytkownika
     const me = await userService.checkAuth();
     if (me.success && me.userData?.userId) {
-      setUser({ userId: me.userData.userId });
+      setUser({ userId: me.userData.userId, steamLinked: me.userData.steamLinked === true });
       navigate('/', { replace: true });
     } else {
       setLoading(false);

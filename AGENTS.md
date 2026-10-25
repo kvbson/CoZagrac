@@ -63,9 +63,11 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 - Odpowiedzi błędu: `res.status(N).json({ message })` — frontendowy `fetchApi` to parsesuje
   do `ServiceResponse.error.message`.
 - Bieżące endpointy: `POST /api/auth/register|login|logout`, `GET /api/auth/steam`,
-  `GET /api/user/me`, CRUD `/api/user/:userId` (PATCH/DELETE), `GET /api/user/me/library`,
-  `GET /api/user/me/recommendations?limit&cursor&isFree&minDiscount&minReviewTier&yearFrom&platform`,
-  `POST /api/user/me/embedding` (job 202) + `GET /api/user/me/embedding/status`,
+  `GET /api/user/me` (zwraca też `steamLinked`), CRUD `/api/user/:userId` (PATCH/DELETE),
+  `GET /api/user/me/library`, `GET /api/user/me/recommendations?limit&cursor&isFree&minDiscount&minReviewTier&yearFrom&platform`,
+  `GET/PUT /api/user/me/favorites` (ręczna podstawa profilu, 5–50 gier),
+  `POST /api/user/me/embedding` body `{ source: 'steam-library' | 'manual-games' }` (job 202) +
+  `GET /api/user/me/embedding/status`,
   `GET /api/game?appId=`, `GET /api/game/search?q&limit` (FTS na `search_vector`),
   `GET /api/game/similar?appId&limit`, `GET /api/reviews/:steamAppid?page&limit&sort&language`,
   `GET /api/health`.
@@ -79,9 +81,12 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 `apps/backend/src/services/embeddings.service.ts`:
 - embedding gry = ważona kombinacja L2: opis (0.4–0.5) + taksonomia (0.15) + recenzje
   pozytywne (~0.7 reszty) + **ujemna** waga recenzji negatywnych; wersja `ACTIVE_EMBEDDING_VERSION` ('v1').
-- embedding użytkownika = centroid (bez wag) embeddingów top-50 gier wg playtime'u; wersja 'v2-centroid'.
-- kNN: `1 - (embedding <=> v::vector)`, odrzucenie gier posiadanych (Steam API `ownedGames`),
-  kursor = similarity ostatniego elementu strony.
+- embedding użytkownika = centroid (bez wag) embeddingów top-50 gier wg playtime'u (źródło
+  `steam-library`) albo ręcznie wybranych gier ulubionych (źródło `manual-games`,
+  tabela `user_favorite_games`); obie ścieżki zapisują tę samą wersję 'v2-centroid'.
+  Podstawy NIE zapisujemy w bazie (user wybiera ją przy każdym buildzie w kreatorze na froncie).
+- kNN: `1 - (embedding <=> v::vector)`, odrzucenie gier posiadanych (Steam API `ownedGames`)
+  oraz ręcznie wybranych ulubionych, kursor = similarity ostatniego elementu strony.
 - **Pułapka pgvector:** odczyt przez drizzle zwraca `number[]`, ale w surowym `sql\`...\``
   trzeba wiązać `toPgVector(vec)::vector` — surowa tablica JS serializuje się do `{...}` i pgvector
   to odrzuca. INSERT-y przez `db.insert(...).values({ embedding })` są OK (drizzle sam konwertuje).
@@ -115,7 +120,12 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 - Komponenty prezentacyjne w `components/ui`, logika feature'u w `features/<x>` (hook + komponenty).
 
 ### Baza danych
-- Schemat tworzony `apps/backend/src/db/scripts/postgre_schema.sql` (pgcrypto + pgvector).
+- Bootstrap schematu (dev i prod): skrypty `apps/backend/src/db/scripts/` w kolejności
+  `extensions.sql` → `bootstrap_schema.sql` → `post_migrate.sql` → `grants.sql` → `verify.sql`
+  (trigger `search_vector` utrzymuje `post_migrate.sql` — drizzle nim nie zarządza).
+  `postgre_schema.sql` to legacy z dryfem — nie tworzyć na nim baz.
+  Prod: VPS, baza `co_zagrac_db_prod`, rola aplikacji `app_user` (tylko DML, bez DDL);
+  procedura wdrożeniowa: `docs/wdrozenie_aplikacji_vps.md`.
 - `apps/backend/src/drizzle/schema.ts` jest **generowany introspekcją**:
   `npm run schema_gen -w backend` (uwaga: `tsvector` jest mapowany na text z TODO).
   Migracje: `npm run sql_gen -w backend`. Nie edytuj schema.ts ręcznie bez powodu.
@@ -135,15 +145,21 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
   i przy tunelu robił się `DEPTH_ZERO_SELF_SIGNED_CERT` (patrz komentarz w `db/init.ts`).
 - Build backendu: `tsc -p tsconfig.build.json` — gdyby znów jadł RAM, przyczyną prawie zawsze
   jest duplikat zależności (patrz Złota zasada), nie rozmiar projektu.
-- Limity serwera: `server.timeout=70s` — synchroniczne `POST /user/me/embedding` przy dużej
-  liczbie brakujących gier może go dotknąć (znane, do asynchronizacji w P2).
+- Limity serwera: `server.timeout=70s` pozostaje (długie żądania synchroniczne); budowanie
+  profilu jest już asynchroniczne (job + `/embedding/status`), więc ten endpoint go nie dotyka.
 
 ## Gdzie jesteśmy (stan: październik 2026)
 - P0+P1 zrobione i zweryfikowane: działające logowanie (Steam+email), rekomendacje z load more
   (kursor), budowanie profilu, `/games/:appId` ze szczegółami, recenzjami (sort/page) i podobnymi grami.
-- Roadmapa: P2 = `/library` (wystawić `ownedGames` jako endpoint), filtry rekomendacji
-  (kolumny `is_free/platform_*/release_date/review_tier` już są w `game_info`), asynchroniczne
-  budowanie profilu ze statusem, recenzje zawsze 200, testy frontendu/E2E, CI.
+- W ramach P2 już zrobione: `/library`, filtry rekomendacji, asynchroniczne budowanie profilu
+  ze statusem, `GET /api/game/search` (FTS), kreator wyboru podstawy profilu
+  (Steam library / ręczny wybór gier `features/profile/ProfileWizard` + `user_favorite_games`).
+- Roadmapa: P2 = recenzje zawsze 200, strona `/privacy` + zgoda użytkownika (audyt danych
+  zrobiony: w bazie e-mail/hash, SteamID64, wektor profilu, sesje; biblioteka Steam live,
+  nie zapisywana; OpenAI nie dostaje danych osobowych), testy frontendu/E2E, CI.
+- Wdrożenie: runbook `docs/wdrozenie_aplikacji_vps.md` (w toku, faza 1 = docker na VPS);
+  CI/CD `.github/workflows/deploy.yml` (branch `dev` → verify → deploy SSH), kontenery na
+  127.0.0.1, edge = host nginx + certbot.
 
 ## Styl raportowania (wymaganie użytkownika)
 - Po polsku, konkretnie: co zmienione (ścieżki), czego nie zrobiono i dlaczego, czego potrzebuje programista.

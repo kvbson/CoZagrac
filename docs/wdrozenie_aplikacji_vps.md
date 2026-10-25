@@ -1,6 +1,10 @@
 # Wdrożenie aplikacji CoZagrac na VPS — plan krok po kroku
 
-> **Status: 21 października 2026 (aktualizacja 2).** Plan operacyjny, kontynuacja
+> **Status: 25 października 2026 (aktualizacja 3).** Docker instalowany z repo
+> Ubuntu (§3, nie z repo Docker Inc.). W kodzie od ostatniej aktualizacji:
+> `POST /user/me/embedding` jest asynchroniczne (202 + `GET /embedding/status`),
+> działa `GET /api/game/search` (FTS na `search_vector`) — smoke-testy §6 to
+> uwzględniają. Plan operacyjny, kontynuacja
 > `konfiguracja_vps_nginx_lets_encrypt.md`. Uzgodnione decyzje: edge = **systemowy
 > nginx na hoście** (Opcja A), **jeden użytkownik bazodanowy** `app_user`
 > (wariant 1 grantów), **źródło deploya: branch `dev`**, domena
@@ -24,7 +28,7 @@ kontenery (docker compose, porty tylko na 127.0.0.1)
 | host nginx | `0.0.0.0:80,443` | jedyny publiczny wejściowy (poza SSH) |
 | kontener frontend | `127.0.0.1:8081` | statyki SPA + `try_files` (plik `nginx/frontend.conf`) |
 | kontener backend | `127.0.0.1:3001` | `trust proxy` w expressie ustawione |
-| PostgreSQL (host) | localhost + brama dockera | `pg_hba` tylko dla sieci dockera; **5432 bez publikacji** |
+| PostgreSQL (host) | `*` (publicznie nieosiągalny) | dopuszcza tylko `pg_hba` (sieci dockera, `app_user`); 5432 bez reguły w ufw/OVH — patrz §4.3 |
 
 ## 2. Stan po inwentarzu
 
@@ -34,25 +38,23 @@ kontenery (docker compose, porty tylko na 127.0.0.1)
 - [x] Baza dev istnieje na VPS (nazwa `<dev_db>` — uzupelnić), połączenia w pgAdmin
 - [x] Certyfikat Let's Encrypt `co-zagrac.pl` WYSTAWIONY (certbot plugin nginx;
       konfiguracja obecnie w `sites-available/default` — do przeniesienia §7)
-- [ ] **Docker NIE zainstalowany** → Faza 1
+- [ ] **Docker** — instalacja z repo Ubuntu (`docker.io` + `docker-compose-v2`, §3);
+      do potwierdzenia `docker compose version` i hello-world
 - [ ] pg_hba dla sieci dockera (§4.3)
 - [ ] Baza prod `co_zagrac_db_prod` → Faza 2
 
 ## 3. Faza 1 — instalacja Dockera na Ubuntu (SSH, sudo)
 
+Metoda: repo Ubuntu (decyzja 21.10) — `docker.io` to ten sam Docker Engine,
+pakowany przez Ubuntu; nasz compose używa tylko podstawowych funkcji, więc
+świeżość z repo Docker Inc. nie jest potrzebna (mniej ruchomych części).
+
 ```bash
 sudo apt-get update
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
-  | sudo tee /etc/apt/sources.list.d/docker.list
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo usermod -aG docker ubuntu
-newgrp docker          # lub wyloguj/zaloguj SSH
+sudo apt-get install -y docker.io docker-compose-v2
+sudo usermod -aG docker ubuntu     # potem WYLOGUJ i zaloguj SSH (grupa docker)
 docker --version && docker compose version
+docker run --rm hello-world
 ```
 
 ## 4. Faza 2 — baza prod przez pgAdmin (Query Tool)
@@ -77,9 +79,14 @@ wykonuj w Query Tool na tym połączeniu (pliki: `apps/backend/src/db/scripts/`)
 
 ### 4.3 Sieć: dostęp kontenerów do PG
 Edycja plików na hoście (SSH/sudo):
-- `postgresql.conf`: `listen_addresses = 'localhost,172.17.0.1'` (albo `*` +
-  tight `pg_hba`) — 172.17.0.1 to domyślna brama `docker0`;
-- `pg_hba.conf`: `host co_zagrac_db_prod app_user 172.16.0.0/12 scram-sha-256`;
+- `postgresql.conf`: `listen_addresses = '*'` — **nie** wpisuj samej bramy
+  `172.17.0.1`: `docker compose` tworzy własną sieć bridge z bramą z kolejnego
+  podzakresu (172.18/172.19...), i połączenie z kontenera padnie. `*` jest
+  bezpieczne, bo 5432 i tak nie jest publikowane (brak reguły w ufw/panelu OVH),
+  a dopuszcza tylko reguła `pg_hba` poniżej;
+- `pg_hba.conf`: `host co_zagrac_db_prod app_user 172.16.0.0/12 scram-sha-256`
+  (zakres 172.16–172.31 obejmuje domyślne podsieci dockera; jeśli sieci wyjdą
+  spoza niego — dopisz konkretną podsieć z `docker network inspect`);
 - restart: `sudo systemctl restart postgresql`.
 
 ## 5. Faza 3 — migracja danych katalogu (pgAdmin, postgres_fdw)
@@ -89,8 +96,8 @@ uruchomionego na `co_zagrac_db_prod` Query Tool. Zakres: `genres,
 categories, tags, game_info, game_genres, game_categories, game_screenshots,
 game_movies, game_publishers, game_reviews, game_embeddings`.
 **Nie przenosimy:** `users, user_providers, sessions, user_embeddings,
-user_*` (start pusty; profil embeddingu użytkownika buduje
-`POST /user/me/embedding`).
+user_*` (start pusty; profil embeddingu użytkownika buduje asynchroniczne
+`POST /user/me/embedding` — status przez `GET /embedding/status`).
 
 ### 5.0 Rozmiar przed decyzją (Query Tool na dev):
 ```sql
@@ -167,7 +174,7 @@ porty na 127.0.0.1, `nginx/co-zagrac.pl.conf`, `scripts/deploy.sh`,
 
 ```bash
 sudo mkdir -p /opt/cozagrac && sudo chown ubuntu:ubuntu /opt/cozagrac
-git clone -b dev <repo-url> /opt/cozagrac
+git clone -b dev https://github.com/kvbson/CoZagrac /opt/cozagrac
 # apps/backend/.env (chmod 600):
 #   NODE_ENV=production
 #   PORT=3001
@@ -179,6 +186,8 @@ git clone -b dev <repo-url> /opt/cozagrac
 cd /opt/cozagrac && docker compose up -d --build
 curl -fsS http://127.0.0.1:3001/api/health && echo OK
 docker compose ps      # dwoje: healthy
+# FTS (dowód, że trigger search_vector + GIN działają po Fazie 3):
+curl -s 'http://127.0.0.1:3001/api/game/search?q=zelda&limit=3'
 ```
 
 ## 7. Faza 5 — TLS na nowym vhoście (certyfikat JUŻ ISTNIEJE)
@@ -204,6 +213,7 @@ domeny na 443 — nginx wybierze pierwszy i ruch pójdzie na `/var/www/html`.
 
 ### 7.3 Przeładowanie i reinstalacja certyfikatu
 ```bash
+certbot --version                      # certbot jest już na hoście (wystawił cert)
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d co-zagrac.pl   # przy istniejącym certem: wybrać "Reinstall"
 ```

@@ -1,8 +1,11 @@
+import { useContext, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { RecommendationFilters } from '@cozagrac/shared/contracts/api';
 import { Button } from '../components/ui/Button';
+import { AuthContext } from '../context/AuthContext';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
 import { useRecommendations } from '../features/recommendations/useRecommendations';
+import { ProfileWizard } from '../features/profile/ProfileWizard';
 
 /** grupowe chipy filtrów; value '' znaczy "wyłącz filtr" */
 const FILTER_CONTROLS: { key: string; label: string; options: { value: string; label: string }[] }[] =
@@ -73,6 +76,8 @@ function readFilters(params: URLSearchParams): RecommendationFilters {
 
 export function RecommendationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useContext(AuthContext);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const filters = readFilters(searchParams);
 
   const {
@@ -81,6 +86,9 @@ export function RecommendationsPage() {
     error,
     building,
     gamesUsed,
+    jobStatus,
+    jobError,
+    jobSource,
     loadingMore,
     refreshing,
     hasEmbedding,
@@ -119,19 +127,23 @@ export function RecommendationsPage() {
     );
   }
 
-  if (!hasEmbedding) {
+  // no profile yet -> the wizard is mandatory; otherwise it opens on demand
+  if (!hasEmbedding || wizardOpen) {
     return (
-      <section className="center">
-        <h1>No profile yet</h1>
-        <p>
-          We build your taste profile from your most played Steam games. It takes a moment —
-          then we will match you with games you have not played yet.
-        </p>
-        <Button onClick={buildProfile} disabled={building}>
-          {building ? 'Building your profile…' : 'Build my profile'}
-        </Button>
-        {error && <p className="error">{error}</p>}
-      </section>
+      <ProfileWizard
+        steamLinked={user?.steamLinked === true}
+        required={!hasEmbedding}
+        building={building}
+        jobStatus={jobStatus}
+        jobError={jobError}
+        error={error}
+        onBuild={buildProfile}
+        onDone={() => {
+          setWizardOpen(false);
+          void load();
+        }}
+        onClose={() => setWizardOpen(false)}
+      />
     );
   }
 
@@ -140,7 +152,7 @@ export function RecommendationsPage() {
       <div className="page__header">
         <h1>Your recommendations</h1>
 
-        <Button onClick={buildProfile} disabled={building}>
+        <Button onClick={() => setWizardOpen(true)} disabled={building}>
           {building ? 'Recalculating profile…' : 'Recalculate profile'}
         </Button>
       </div>
@@ -178,7 +190,10 @@ export function RecommendationsPage() {
       {error && <p className="error">{error}</p>}
 
       {gamesUsed !== null && !building && (
-        <p className="muted">Profile built from {gamesUsed} of your games.</p>
+        <p className="muted">
+          Profile built from {gamesUsed}{' '}
+          {jobSource === 'manual-games' ? 'games you picked' : 'of your most played games'}.
+        </p>
       )}
 
       {items.length === 0 && !building ? (

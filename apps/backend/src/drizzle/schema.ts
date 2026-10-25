@@ -124,6 +124,37 @@ export const userEmbeddings = pgTable(
   ],
 );
 
+export const userFavoriteGames = pgTable(
+  'user_favorite_games',
+  {
+    userId: uuid('user_id').notNull(),
+    steamAppid: integer('steam_appid').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_user_favorite_games_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_favorite_games_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'user_favorite_games_steam_appid_fkey',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [table.userId, table.steamAppid],
+      name: 'user_favorite_games_pkey',
+    }),
+  ],
+);
+
 export const users = pgTable('users', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   email: varchar(),

@@ -40,7 +40,7 @@ $$;
 ALTER ROLE app_user LOGIN PASSWORD 'CHANGE_ME';
 
 -- 2) Schema usage + full DML on the application tables
---    (list = bootstrap_schema.sql, 18 tables).
+--    (list = bootstrap_schema.sql, 19 tables).
 GRANT USAGE ON SCHEMA public TO app_user;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON
@@ -48,6 +48,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   user_providers,
   sessions,
   user_embeddings,
+  user_favorite_games,
   game_embeddings,
   game_info,
   game_reviews,
@@ -81,7 +82,7 @@ COMMIT;
 --
 -- -- app_user: full DML on user data + sessions, read-only game catalog
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON
---   users, user_providers, sessions, user_embeddings,
+--   users, user_providers, sessions, user_embeddings, user_favorite_games,
 --   user_genres, user_categories, user_tags
 --   TO app_user;
 -- GRANT SELECT ON

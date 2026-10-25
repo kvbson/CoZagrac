@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import {
+  buildUserEmbeddingHttpSchema,
   getUserRecommendationsHttpSchema,
+  MIN_FAVORITE_GAMES,
   type UserEmbeddingStatusResponse,
 } from '@cozagrac/shared/contracts/api';
+import { userService } from '../services/user.service.js';
+import { favoritesService } from '../services/favorites.service.js';
 import { getSessionUserId } from '../functions/setUserSession.js';
 import { embeddingService } from '../services/embeddings.service.js';
 
@@ -43,10 +47,30 @@ export const getUserRecommendations = async (req: Request, res: Response) => {
 
 const embeddingJobs = new Map<string, UserEmbeddingStatusResponse>();
 
-export const regenerateUserEmbedding = (req: Request, res: Response) => {
+export const regenerateUserEmbedding = async (req: Request, res: Response) => {
   const userId = getSessionUserId(req);
   if (!userId) {
     return res.sendStatus(401);
+  }
+
+  const { source } = buildUserEmbeddingHttpSchema.parse(req).body;
+
+  // cheap pre-checks so the wizard gets an instant, actionable error
+  // instead of a job that fails after a minute
+  if (source === 'manual-games') {
+    const favoriteCount = (await favoritesService.getAppIds(userId)).length;
+    if (favoriteCount < MIN_FAVORITE_GAMES) {
+      return res.status(400).json({
+        message: `Select at least ${MIN_FAVORITE_GAMES} of your games first - you picked ${favoriteCount}.`,
+      });
+    }
+  } else {
+    const profile = await userService.getById(userId);
+    if (!profile?.steamId) {
+      return res
+        .status(400)
+        .json({ message: 'This account has no linked Steam profile. Pick games yourself instead.' });
+    }
   }
 
   const current = embeddingJobs.get(userId);
@@ -57,16 +81,18 @@ export const regenerateUserEmbedding = (req: Request, res: Response) => {
   embeddingJobs.set(userId, { status: 'running' });
 
   void embeddingService.user
-    .generateUserEmbedding(userId)
+    .generateUserEmbedding(userId, source)
     .then((result) => {
       embeddingJobs.set(
         userId,
         result
-          ? { status: 'done', gamesUsed: result.gamesUsed }
+          ? { status: 'done', gamesUsed: result.gamesUsed, source }
           : {
               status: 'failed',
               message:
-                'Could not build your profile - Steam library is private/empty or game embeddings are missing.',
+                source === 'manual-games'
+                  ? 'Could not build your profile - none of your games have embeddings yet (no reviews/description in our catalog).'
+                  : 'Could not build your profile - Steam library is private/empty or game embeddings are missing.',
             },
       );
     })

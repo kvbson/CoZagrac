@@ -1,9 +1,10 @@
 import { and, desc, eq, gte, inArray, ne, notInArray, sql } from 'drizzle-orm';
-import type { RecommendationFilters } from '@cozagrac/shared/contracts/api';
+import type { ProfileSource, RecommendationFilters } from '@cozagrac/shared/contracts/api';
 import { model, openAiClient } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { db } from '../db/init.js';
 import { gameEmbeddings, gameInfo, userEmbeddings, userProviders } from '../drizzle/schema.js';
+import { favoritesService } from './favorites.service.js';
 import {
   chunkReviews,
   l2Normalize,
@@ -345,9 +346,21 @@ export const embeddingService = {
 
   user: {
     /**
+     * Build the user profile embedding from the basis picked in the
+     * source wizard. Both sources produce the same 'v2-centroid' math
+     * (unweighted mean of game embeddings); only the input set differs.
+     */
+    async generateUserEmbedding(userId: string, source: ProfileSource) {
+      if (source === 'manual-games') {
+        return embeddingService.user.generateFromFavoriteGames(userId);
+      }
+      return embeddingService.user.generateFromSteamLibrary(userId);
+    },
+
+    /**
      * Generate and save user embeddings
      */
-    async generateUserEmbedding(userId: string) {
+    async generateFromSteamLibrary(userId: string) {
       const [provider] = await db
         .select({ steamId: userProviders.providerUserId })
         .from(userProviders)
@@ -449,6 +462,76 @@ export const embeddingService = {
     },
 
     /**
+     * Profile from the user's manually picked favorite games
+     * (user_favorite_games). Games missing from the catalog or without an
+     * embedding yet are synced on the fly, so fresh long-tail picks still
+     * build a usable profile inside the async job.
+     */
+    async generateFromFavoriteGames(userId: string) {
+      const appIds = await favoritesService.getAppIds(userId);
+      if (!appIds.length) {
+        logger.warn('[USER_EMBEDDING] No favorite games selected');
+        return null;
+      }
+
+      const selectGameEmbeddings = (ids: number[]) =>
+        db
+          .select({ embedding: gameEmbeddings.embedding, steamAppid: gameEmbeddings.steamAppid })
+          .from(gameEmbeddings)
+          .where(inArray(gameEmbeddings.steamAppid, ids));
+
+      let rows = await selectGameEmbeddings(appIds);
+      const missing = appIds.filter((appid) => !rows.some((r) => r.steamAppid === appid));
+
+      if (missing.length) {
+        logger.info(`[USER_EMBEDDING] ${missing.length} favorite games lack embeddings - syncing`);
+
+        for (const appid of missing) {
+          const syncResult = await syncGameInfo(appid);
+          if (!syncResult.success) {
+            logger.warn(
+              `[USER_EMBEDDING] Failed to sync game info for appId ${appid} - ${syncResult.reason}`,
+            );
+          }
+        }
+
+        await syncReviewsForGames({ specificAppIds: missing });
+
+        for (const appid of missing) {
+          await embeddingService.game.generateGameEmbedding(appid);
+        }
+
+        rows = await selectGameEmbeddings(appIds);
+      }
+
+      if (!rows.length) {
+        logger.warn('[USER_EMBEDDING] No game embeddings found for favorite games');
+        return null;
+      }
+
+      const vectors = rows.map((r) => ({ vec: r.embedding, weight: 1 }));
+      const finalEmbedding = l2Normalize(weightedMean(vectors));
+
+      await db.transaction(async (tx) => {
+        await tx.delete(userEmbeddings).where(eq(userEmbeddings.userId, userId));
+
+        await tx.insert(userEmbeddings).values({
+          userId,
+          embedding: finalEmbedding,
+          modelName: model,
+          embeddingVersion: 'v2-centroid',
+        });
+      });
+
+      logger.info('[USER_EMBEDDING][V2][FAVORITES]', {
+        userId,
+        basedOnGames: rows.length,
+      });
+
+      return { embedding: finalEmbedding, gamesUsed: rows.length };
+    },
+
+    /**
      * Recommend games for a user (kNN against game embeddings).
      * - excludes games already owned (Steam library),
      * - only active game-embedding version,
@@ -486,13 +569,17 @@ export const embeddingService = {
         ownedIds = response?.games?.map((g) => g.appid) ?? [];
       }
 
+      // manual picks count as "already known" too - never recommend them back
+      const favoriteIds = await favoritesService.getAppIds(userId);
+      const excludeIds = [...new Set([...ownedIds, ...favoriteIds])];
+
       // jw. - embedding z bazy to number[]; do sql-a trzeba go w formacie wektora pgvector
       const similarityExpr = sql<number>`
     1 - (${gameEmbeddings.embedding} <=> ${toPgVector(userEmb.embedding)}::vector)
   `;
 
       const conditions = [eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION)];
-      if (ownedIds.length) conditions.push(notInArray(gameEmbeddings.steamAppid, ownedIds));
+      if (excludeIds.length) conditions.push(notInArray(gameEmbeddings.steamAppid, excludeIds));
       if (cursor !== undefined) conditions.push(sql`(${similarityExpr}) < ${cursor}`);
 
       if (filters.isFree !== undefined) conditions.push(eq(gameInfo.isFree, filters.isFree));

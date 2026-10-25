@@ -1,4 +1,5 @@
 import type {
+  ProfileSource,
   RecommendationFilters,
   UserEmbeddingStatusResponse,
   UserRecommendationsResponse,
@@ -37,10 +38,16 @@ export const recommendationService = {
     });
   },
 
-  /** Starts (re)building the profile embedding - async job, poll getEmbeddingStatus */
-  buildProfile: async (): Promise<ServiceResponse<UserEmbeddingStatusResponse>> =>
+  /**
+   * Starts (re)building the profile embedding from the chosen basis -
+   * async job, poll getEmbeddingStatus.
+   */
+  buildProfile: async (
+    source: ProfileSource,
+  ): Promise<ServiceResponse<UserEmbeddingStatusResponse>> =>
     fetchApi<UserEmbeddingStatusResponse>('/api/user/me/embedding', {
       method: 'POST',
+      body: JSON.stringify({ source }),
     }),
 
   getEmbeddingStatus: async (): Promise<ServiceResponse<UserEmbeddingStatusResponse>> =>

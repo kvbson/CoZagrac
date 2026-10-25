@@ -3,6 +3,7 @@ import {
   CreateUserInputWithHash,
   DeleteUserParams,
   GetUserQuery,
+  MeResponse,
   UpdateUserBody,
   UpdateUserParams,
 } from '@cozagrac/shared/contracts/api';
@@ -94,13 +95,17 @@ export const getUser = async (
    CHECK USER SESSION
 ========================= */
 
-export const me = (req: Request, res: Response) => {
+export const me = async (req: Request, res: Response) => {
   const userId = getSessionUserId(req);
   if (!userId) {
     return res.sendStatus(401);
   }
 
-  res.json({ userId });
+  // steamLinked decides whether the source wizard offers 'steam-library'
+  const profile = await userService.getById(userId);
+  const steamLinked = Boolean(profile?.steamId);
+
+  res.json({ userId, steamLinked } satisfies MeResponse);
 };
 
 /* =========================

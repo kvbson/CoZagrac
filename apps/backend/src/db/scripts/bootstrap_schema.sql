@@ -184,6 +184,15 @@ CREATE TABLE user_embeddings (
   embedding_version varchar(32) NOT NULL
 );
 
+-- manual profile basis: user-picked favorite games (also excluded from
+-- recommendation results); steam-library users may keep this empty
+CREATE TABLE user_favorite_games (
+  user_id uuid NOT NULL,
+  steam_appid integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, steam_appid)
+);
+
 -- ========================= user preferences (unused by code, kept for parity) =========================
 
 CREATE TABLE user_genres (
@@ -246,6 +255,11 @@ ALTER TABLE game_embeddings ADD CONSTRAINT game_embeddings_steam_appid_fkey
 ALTER TABLE user_embeddings ADD CONSTRAINT user_embeddings_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
+ALTER TABLE user_favorite_games ADD CONSTRAINT user_favorite_games_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE user_favorite_games ADD CONSTRAINT user_favorite_games_steam_appid_fkey
+  FOREIGN KEY (steam_appid) REFERENCES game_info(steam_appid) ON DELETE CASCADE;
+
 ALTER TABLE user_genres ADD CONSTRAINT user_genres_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE user_genres ADD CONSTRAINT user_genres_genre_id_fkey
@@ -293,6 +307,9 @@ CREATE INDEX idx_game_embeddings_version ON game_embeddings (embedding_version);
 CREATE INDEX idx_user_embeddings_user_id ON user_embeddings (user_id);
 CREATE INDEX idx_user_embeddings_vector ON user_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX idx_user_embeddings_version ON user_embeddings (embedding_version);
+
+-- user_id side is covered by the PK prefix (user_id, steam_appid)
+CREATE INDEX idx_user_favorite_games_steam_appid ON user_favorite_games (steam_appid);
 
 CREATE INDEX idx_user_genres_user_id ON user_genres (user_id);
 CREATE INDEX idx_user_categories_user_id ON user_categories (user_id);

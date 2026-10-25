@@ -378,6 +378,13 @@ select {
     border-color: rgba(0, 0, 0, 0.1);
     background: #ffffff;
   }
+  .wizard__option {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+  .wizard__option p {
+    color: rgba(0, 0, 0, 0.6);
+  }
   select {
     background: #ffffff;
     border-color: rgba(0, 0, 0, 0.15);
@@ -433,6 +440,50 @@ select {
   color: #1b2838;
   border-color: #66c0f4;
   font-weight: 600;
+}
+
+/* ---- profile source wizard ---- */
+.wizard__options {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  max-width: 720px;
+}
+
+.wizard__option {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.wizard__option:hover {
+  border-color: #66c0f4;
+}
+
+.wizard__option h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.wizard__option p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.wizard__picked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.wizard__nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 /* ---- search page ---- */

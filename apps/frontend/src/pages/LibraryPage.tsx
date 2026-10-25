@@ -43,7 +43,8 @@ export function LibraryPage() {
         <h1>Your library</h1>
         <p>
           This account has no linked Steam profile. Log in with Steam to see your library here —
-          it is also what your taste profile is built from.
+          or build your taste profile from games you pick yourself in
+          <Link to="/recommendations">Recommendations</Link>.
         </p>
       </section>
     );

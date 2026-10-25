@@ -11,7 +11,8 @@ export type UserProfile = {
 };
 
 export const userService = {
-  checkAuth: async () => fetchApi<{ userId?: string }>('/api/user/me', { method: 'GET' }),
+  checkAuth: async () =>
+    fetchApi<{ userId: string; steamLinked: boolean }>('/api/user/me', { method: 'GET' }),
   login: async (data: LoginUserInput): Promise<ServiceResponse<{ message?: string }>> =>
     fetchApi<{ message?: string }>('/api/auth/login', {
       method: 'POST',
