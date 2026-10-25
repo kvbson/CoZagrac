@@ -1,10 +1,12 @@
 # Wdrożenie aplikacji CoZagrac na VPS — plan krok po kroku
 
-> **Status: 25 października 2026 (aktualizacja 4).** **Fazy 1–5 wykonane** — VPS: docker
+> **Status: 25 października 2026 (aktualizacja 5).** **Fazy 1–6 WYKONANE** — VPS: docker
 > (repo Ubuntu), baza `co_zagrac_prod` (z dumpa dev), pg_hba+ufw dla sieci dockera,
 > kontenery na 127.0.0.1, vhost + certyfikat certbot przeniesiony z `default`
-> (Reinstall, dry-run ✓, 301/200/health ✓). Zostało: panel Steam (callback),
-> Faza 6 (sekrety Actions), backup cron. Docker instalowany z repo
+> (Reinstall, dry-run ✓, 301/200/health ✓), klucz deploy + sekrety GitHub Actions,
+> obieg push `dev` → verify → deploy zweryfikowany. Logowanie Steam przez domenę ✓.
+> Zostało: backup cron (operatyka), sync katalogu (P2), spójność `users_email_key`
+> na dev. Docker instalowany z repo
 > Ubuntu (§3, nie z repo Docker Inc.). W kodzie od ostatniej aktualizacji:
 > `POST /user/me/embedding` jest asynchroniczne (202 + `GET /embedding/status`),
 > działa `GET /api/game/search` (FTS na `search_vector`) — smoke-testy §6 to
