@@ -1,6 +1,6 @@
 -- Read-only checklist: does this database match what the app expects?
 -- Expected state (dev DB catalog dump, October 2026 + bootstrap_schema.sql):
---   2 extensions, 19 tables, 1 non-extension function, 1 user trigger,
+--   2 extensions, 20 tables, 1 non-extension function, 1 user trigger,
 --   vector type from the extension, 24 custom indexes (2 HNSW + 1 GIN),
 --   0 sequences, users_email_key UNIQUE, sessions(sid/sess/expire),
 --   genre_names_for_game_view gone, DML grants for app_user on all tables.
@@ -12,7 +12,7 @@ SELECT extname, extversion FROM pg_extension
 WHERE extname IN ('pgcrypto', 'vector')
 ORDER BY extname;
 
-SELECT '=== 2. tables: expect count = 19 ===' AS check;
+SELECT '=== 2. tables: expect count = 20 ===' AS check;
 SELECT count(*) AS tables
 FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE';

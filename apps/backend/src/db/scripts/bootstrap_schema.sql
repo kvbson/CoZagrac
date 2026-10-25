@@ -193,6 +193,18 @@ CREATE TABLE user_favorite_games (
   PRIMARY KEY (user_id, steam_appid)
 );
 
+-- daily OpenAI quota counters (see utils/usage.helpers.ts): one row per
+-- (UTC day, account) plus a global row with user_id =
+-- '00000000-0000-0000-0000-000000000000'. NO FK by design (the sentinel
+-- is not a user; userService.delete removes per-account rows)
+CREATE TABLE embedding_usage_daily (
+  day date NOT NULL,
+  user_id uuid NOT NULL,
+  tokens bigint NOT NULL DEFAULT 0,
+  profile_builds integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, user_id)
+);
+
 -- ========================= user preferences (unused by code, kept for parity) =========================
 
 CREATE TABLE user_genres (

@@ -14,6 +14,7 @@ import {
   primaryKey,
   doublePrecision,
   date,
+  bigint,
 } from 'drizzle-orm/pg-core';
 
 export const genres = pgTable(
@@ -152,6 +153,22 @@ export const userFavoriteGames = pgTable(
       columns: [table.userId, table.steamAppid],
       name: 'user_favorite_games_pkey',
     }),
+  ],
+);
+
+export const embeddingUsageDaily = pgTable(
+  'embedding_usage_daily',
+  {
+    day: date().notNull(),
+    // GLOBAL_USAGE_USER_ID row aggregates all traffic; NO FK on purpose
+    // (the sentinel uuid is not a user; per-account rows are removed by
+    // userService.delete)
+    userId: uuid('user_id').notNull(),
+    tokens: bigint({ mode: 'number' }).default(0).notNull(),
+    profileBuilds: integer('profile_builds').default(0).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.day, table.userId], name: 'embedding_usage_daily_pkey' }),
   ],
 );
 

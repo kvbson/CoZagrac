@@ -75,7 +75,18 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
   `recommendations` zwraca 200 z `hasEmbedding: false` gdy brak profilu (frontend pokazuje CTA);
   `POST /user/me/embedding` jest **asynchroniczne** (job w pamięci serwera, status przez
   `GET /embedding/status`; restart serwera kasuje statusy → `idle`);
-  `review_tier` to **tier popularności** (`S/A/B` = ≥10k/5k/1k recenzji, nie ocena).
+  `review_tier` to **tier popularności** (`S/A/B` = ≥10k/5k/1k recenzji, nie ocena);
+  **limity dzienne** (UTC, tabela `embedding_usage_daily`, liczniki w DB przeżywają restarty):
+  429 gdy przekroczone `USER_PROFILE_BUILDS_PER_DAY` (buildy profilu, oba źródła, liczone
+  przy starcie joba) lub budżet tokenów OpenAI przy `manual-games`; połowa ścieżki on-demand
+  generuje embeddingi tylko dla gier poza katalogiem → `createEmbeddings`
+  (`clients/openai/embeddings.ts`) jest **jedynym** punktem wołającym `embeddings.create`
+  i księguje `usage.total_tokens` (konto + wiersz globalny o `user_id` =sentyminel
+  `00000000-…`); przy wyczerpaniu w trakcie joba build degradowany (komunikat w statusie).
+  Limit globalny = twardy sufit wydatków (10M ≈ $0.20/dzień przy $0.02/1M).
+  Reset limitu = nowy klucz dnia (UTC) w `embedding_usage_daily`, zero kodu „zerującego";
+  historia starsza niż `USAGE_RETENTION_DAYS` (domyślnie 90) usuwana przy starcie serwera
+  i co 24 h (`index.ts`, `usageService.cleanupOldRows`).
 
 ### Rekomendacje (rdzeń pracy inżynierskiej — nie psuj metodologii)
 `apps/backend/src/services/embeddings.service.ts`:

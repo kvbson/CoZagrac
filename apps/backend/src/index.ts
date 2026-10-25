@@ -10,6 +10,7 @@ import { checkDbConnection } from './db/utils/healthCheck.js';
 import { env } from './env.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import mainRouter from './routes/index.js';
+import { usageService } from './services/usage.service.js';
 
 const app = express();
 
@@ -61,6 +62,22 @@ async function startServer() {
     console.error('Database connection failed:', err);
     process.exit(1);
   }
+
+  // usage history retention (embedding_usage_daily): once at boot - so
+  // redeploys also clean - then every 24h; unref keeps the timer from
+  // holding the process open on its own
+  const cleanupUsageHistory = () => {
+    usageService
+      .cleanupOldRows()
+      .then((removed) => {
+        if (removed > 0) {
+          console.log(`[USAGE] removed ${removed} usage rows older than ${env.USAGE_RETENTION_DAYS} days`);
+        }
+      })
+      .catch((err: unknown) => console.error('[USAGE] cleanup failed:', err));
+  };
+  cleanupUsageHistory();
+  setInterval(cleanupUsageHistory, 24 * 60 * 60 * 1000).unref();
 
   // Set server timeouts
   server.timeout = 70000; // 70 seconds

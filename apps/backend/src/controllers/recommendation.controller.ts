@@ -5,7 +5,9 @@ import {
   MIN_FAVORITE_GAMES,
   type UserEmbeddingStatusResponse,
 } from '@cozagrac/shared/contracts/api';
+import { env } from '../env.js';
 import { userService } from '../services/user.service.js';
+import { usageService } from '../services/usage.service.js';
 import { favoritesService } from '../services/favorites.service.js';
 import { getSessionUserId } from '../functions/setUserSession.js';
 import { embeddingService } from '../services/embeddings.service.js';
@@ -73,20 +75,57 @@ export const regenerateUserEmbedding = async (req: Request, res: Response) => {
     }
   }
 
+  // dzienne limity: buildy (oba źródła, chronią Steam API i kolejki jobów)
+  // oraz budżet tokenów OpenAI (tylko manual-games generuje embeddingi)
+  if (await usageService.buildsProblem(userId)) {
+    return res.status(429).json({
+      message: `You have used all ${env.USER_PROFILE_BUILDS_PER_DAY} profile rebuilds today. Try again tomorrow.`,
+    });
+  }
+
+  if (source === 'manual-games' && (await usageService.tokenBudgetProblem(userId))) {
+    return res
+      .status(429)
+      .json({ message: 'Daily AI quota for your account is exhausted. Try again tomorrow.' });
+  }
+
   const current = embeddingJobs.get(userId);
   if (current?.status === 'running') {
     return res.status(200).json(current);
   }
 
   embeddingJobs.set(userId, { status: 'running' });
+  // liczone przed startem - crash/retry joba nie oddaje limitu
+  await usageService.incrementBuilds(userId);
 
   void embeddingService.user
     .generateUserEmbedding(userId, source)
     .then((result) => {
+      const quotaReached = result && 'quotaReached' in result ? result.quotaReached : false;
+
+      if (result && quotaReached && result.gamesUsed === 0) {
+        embeddingJobs.set(userId, {
+          status: 'failed',
+          message:
+            'Daily AI quota reached before any of your games could be embedded. Try again tomorrow.',
+        });
+        return;
+      }
+
       embeddingJobs.set(
         userId,
         result
-          ? { status: 'done', gamesUsed: result.gamesUsed, source }
+          ? {
+              status: 'done',
+              gamesUsed: result.gamesUsed,
+              source,
+              ...(quotaReached
+                ? {
+                    message:
+                      'Daily AI quota reached - profile built from fewer games than expected.',
+                  }
+                : {}),
+            }
           : {
               status: 'failed',
               message:

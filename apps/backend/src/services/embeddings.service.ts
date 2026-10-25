@@ -1,6 +1,8 @@
 import { and, desc, eq, gte, inArray, ne, notInArray, sql } from 'drizzle-orm';
 import type { ProfileSource, RecommendationFilters } from '@cozagrac/shared/contracts/api';
-import { model, openAiClient } from '../clients/openai/index.js';
+import { model } from '../clients/openai/index.js';
+import { createEmbeddings } from '../clients/openai/embeddings.js';
+import { QuotaError } from '../utils/usage.helpers.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { db } from '../db/init.js';
 import { gameEmbeddings, gameInfo, userEmbeddings, userProviders } from '../drizzle/schema.js';
@@ -79,9 +81,14 @@ function toGameCardItem(r: GameCardRow) {
 export const embeddingService = {
   game: {
     /**
-     * Generate and save new game embedding
+     * Generate and save new game embedding.
+     * ctx.userId = who triggered the generation (manual profile build);
+     * null = admin batch script - only the global daily budget applies.
      */
-    async generateGameEmbedding(steamAppId: number) {
+    async generateGameEmbedding(
+      steamAppId: number,
+      ctx: { userId: string | null } = { userId: null },
+    ) {
       const [gameInfo, reviews] = await Promise.all([
         gameService.getByAppId(steamAppId),
         reviewService.getEmbeddingCandidatesForGame(steamAppId),
@@ -171,29 +178,13 @@ export const embeddingService = {
        * 4. Generate embeddings
        */
       const [descriptionRes, positiveRes, negativeRes, taxonomyRes] = await Promise.all([
-        openAiClient.embeddings.create({
-          model,
-          input: descriptionText,
-        }),
+        createEmbeddings(descriptionText, ctx),
 
-        positiveChunks.length
-          ? openAiClient.embeddings.create({
-              model,
-              input: positiveChunks,
-            })
-          : null,
+        positiveChunks.length ? createEmbeddings(positiveChunks, ctx) : null,
 
-        negativeChunks.length
-          ? openAiClient.embeddings.create({
-              model,
-              input: negativeChunks,
-            })
-          : null,
+        negativeChunks.length ? createEmbeddings(negativeChunks, ctx) : null,
 
-        openAiClient.embeddings.create({
-          model,
-          input: taxonomyText,
-        }),
+        createEmbeddings(taxonomyText, ctx),
       ]);
 
       /**
@@ -482,6 +473,7 @@ export const embeddingService = {
 
       let rows = await selectGameEmbeddings(appIds);
       const missing = appIds.filter((appid) => !rows.some((r) => r.steamAppid === appid));
+      let quotaReached = false;
 
       if (missing.length) {
         logger.info(`[USER_EMBEDDING] ${missing.length} favorite games lack embeddings - syncing`);
@@ -498,7 +490,16 @@ export const embeddingService = {
         await syncReviewsForGames({ specificAppIds: missing });
 
         for (const appid of missing) {
-          await embeddingService.game.generateGameEmbedding(appid);
+          try {
+            await embeddingService.game.generateGameEmbedding(appid, { userId });
+          } catch (err) {
+            if (err instanceof QuotaError) {
+              logger.warn(`[USER_EMBEDDING] Daily AI quota hit at appId ${appid} - stopping`);
+              quotaReached = true;
+              break;
+            }
+            throw err;
+          }
         }
 
         rows = await selectGameEmbeddings(appIds);
@@ -506,7 +507,7 @@ export const embeddingService = {
 
       if (!rows.length) {
         logger.warn('[USER_EMBEDDING] No game embeddings found for favorite games');
-        return null;
+        return quotaReached ? { gamesUsed: 0, quotaReached: true } : null;
       }
 
       const vectors = rows.map((r) => ({ vec: r.embedding, weight: 1 }));
@@ -526,9 +527,10 @@ export const embeddingService = {
       logger.info('[USER_EMBEDDING][V2][FAVORITES]', {
         userId,
         basedOnGames: rows.length,
+        quotaReached,
       });
 
-      return { embedding: finalEmbedding, gamesUsed: rows.length };
+      return { embedding: finalEmbedding, gamesUsed: rows.length, quotaReached };
     },
 
     /**
