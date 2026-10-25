@@ -18,6 +18,7 @@
 > **baza dev i prod w tej samej instancji PostgreSQL na VPS** (dostęp przez
 > pgAdmin), **migracja danych katalogu z embeddingami przez pgAdmin**
 > (postgres_fdw), dane użytkowników na prod startują pusto.
+> Raport z realnego przebiegu (co zaszło, jakie pułapki): `raport_wdrozenia.md`.
 
 ## 1. Architektura docelowa
 
