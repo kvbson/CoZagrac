@@ -106,14 +106,39 @@ export type CreateProviderInput = z.infer<typeof createProviderHttpSchema>['body
    RECOMMENDATIONS
 ========================= */
 
+export const queryBooleanSchema = z
+  .enum(['true', 'false'])
+  .transform((value) => value === 'true');
+
+/**
+ * review_tier is a popularity tier from getReviewTier():
+ * 'S' >= 10k reviews, 'A' >= 5k, 'B' >= 1k. minReviewTier keeps games with
+ * at least that many reviews.
+ */
+export const reviewTierSchema = z.enum(['B', 'A', 'S']);
+
 export const getUserRecommendationsHttpSchema = z.object({
   query: z.object({
     limit: z.coerce.number().int().min(1).max(50).default(20),
     cursor: z.coerce.number().optional(),
+    isFree: queryBooleanSchema.optional(),
+    minDiscount: z.coerce.number().int().min(1).max(99).optional(),
+    minReviewTier: reviewTierSchema.optional(),
+    yearFrom: z.coerce.number().int().min(1990).max(2100).optional(),
+    platform: z.enum(['windows', 'mac', 'linux']).optional(),
   }),
 });
 
 export type GetUserRecommendationsQuery = z.infer<typeof getUserRecommendationsHttpSchema>['query'];
+
+/** same fields as the query schema, without defaults/coercion internals - filters passed from UI */
+export type RecommendationFilters = {
+  isFree?: boolean;
+  minDiscount?: number;
+  minReviewTier?: z.infer<typeof reviewTierSchema>;
+  yearFrom?: number;
+  platform?: 'windows' | 'mac' | 'linux';
+};
 
 export const recommendationItemSchema = z.object({
   steamAppid: z.number(),
@@ -136,8 +161,16 @@ export type UserRecommendationsResponse = {
   hasEmbedding: boolean;
 };
 
-export type GenerateUserEmbeddingResponse = {
-  gamesUsed: number;
+/**
+ * POST /user/me/embedding is asynchronous now: it starts a job and returns
+ * 202 with status 'running'; poll GET /user/me/embedding/status until
+ * 'done' (gamesUsed set) or 'failed' (message set). 'idle' = no job since
+ * server start (in-memory job store).
+ */
+export type UserEmbeddingStatusResponse = {
+  status: 'idle' | 'running' | 'done' | 'failed';
+  gamesUsed?: number;
+  message?: string;
 };
 
 /* =========================
@@ -170,6 +203,12 @@ export type GameDetailsResponse = {
   priceInitialFormatted: string | null;
   priceDiscountPercent: number | null;
   reviewTier: string | null;
+  pcMinimum: string | null;
+  pcRecommended: string | null;
+  macMinimum: string | null;
+  macRecommended: string | null;
+  linuxMinimum: string | null;
+  linuxRecommended: string | null;
   genres: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   publishers: { publisherId: number; name: string | null }[];
@@ -205,4 +244,53 @@ export type GameReviewsResponse = {
   total: number;
   pages: number;
   items: GameReviewItem[];
+};
+
+/** language filter for reviews; 'all' disables filtering (values match game_reviews.language) */
+export const gameReviewsLanguageSchema = z.enum(['all', 'english', 'polish']);
+export type GameReviewsLanguage = z.infer<typeof gameReviewsLanguageSchema>;
+
+/* =========================
+   GAME SEARCH (full text)
+========================= */
+
+export const getGameSearchHttpSchema = z.object({
+  query: z.object({
+    q: z.string().trim().min(1).max(100),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  }),
+});
+
+export type GetGameSearchQuery = z.infer<typeof getGameSearchHttpSchema>['query'];
+
+export type GameSearchItem = {
+  steamAppid: number;
+  name: string;
+  headerImage: string | null;
+  isFree: boolean | null;
+  priceFinalFormatted: string | null;
+  priceDiscountPercent: number | null;
+  reviewTier: string | null;
+};
+
+export type GameSearchResponse = {
+  items: GameSearchItem[];
+};
+
+/* =========================
+   USER STEAM LIBRARY
+========================= */
+
+export type UserLibraryGame = {
+  steamAppid: number;
+  name: string;
+  playtimeForever: number;
+  /** null when the game is not in our catalog */
+  headerImage: string | null;
+};
+
+export type UserLibraryResponse = {
+  /** false when the account has no linked Steam profile */
+  steamLinked: boolean;
+  items: UserLibraryGame[];
 };

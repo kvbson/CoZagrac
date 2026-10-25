@@ -2,12 +2,14 @@ import { Router } from 'express';
 import {
   createUser,
   getUser,
+  getUserLibrary,
   updateUser,
   deleteUser,
   me,
 } from '../../controllers/users.controller.js';
 import {
   getUserRecommendations,
+  getUserEmbeddingStatus,
   regenerateUserEmbedding,
 } from '../../controllers/recommendation.controller.js';
 import { requireAuth, requireSameUserParam } from '../../middlewares/requireAuth.js';
@@ -48,7 +50,10 @@ router.delete(
 
 router.get('/me', requireAuth, me);
 
-// GET /user/me/recommendations?limit=&cursor=
+// GET /user/me/library - Steam library with playtime, enriched with catalog images
+router.get('/me/library', requireAuth, getUserLibrary);
+
+// GET /user/me/recommendations?limit=&cursor=&isFree=&minDiscount=&minReviewTier=&yearFrom=&platform=
 router.get(
   '/me/recommendations',
   requireAuth,
@@ -56,7 +61,10 @@ router.get(
   getUserRecommendations,
 );
 
-// POST /user/me/embedding - (re)build profile embedding from Steam library
+// POST /user/me/embedding - start (re)building profile embedding (async job, 202)
 router.post('/me/embedding', requireAuth, regenerateUserEmbedding);
+
+// GET /user/me/embedding/status - poll embedding job status
+router.get('/me/embedding/status', requireAuth, getUserEmbeddingStatus);
 
 export default router;

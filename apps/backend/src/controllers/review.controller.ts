@@ -6,9 +6,9 @@ export const getGameReviews = async (req: Request, res: Response) => {
   const { params, query } = getGameReviewsHttpSchema.parse(req);
 
   const { steamAppid } = params;
-  const { page, limit, sort } = query;
+  const { page, limit, sort, language } = query;
 
-  const result = await reviewService.getByGame(steamAppid, page, limit, sort);
+  const result = await reviewService.getByGame(steamAppid, page, limit, sort, language);
 
   if (!result || !result.items.length) {
     return res.sendStatus(404);

@@ -1,4 +1,5 @@
-import { and, desc, eq, inArray, ne, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, ne, notInArray, sql } from 'drizzle-orm';
+import type { RecommendationFilters } from '@cozagrac/shared/contracts/api';
 import { model, openAiClient } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { db } from '../db/init.js';
@@ -32,6 +33,22 @@ export const USER_LIMITS = {
 };
 
 export const ACTIVE_EMBEDDING_VERSION = 'v1';
+
+/**
+ * minReviewTier -> tiers with at least that many reviews.
+ * getReviewTier(): 'S' >= 10k, 'A' >= 5k, 'B' >= 1k Steam reviews.
+ */
+const REVIEW_TIER_ALLOWED: Record<'B' | 'A' | 'S', string[]> = {
+  B: ['S', 'A', 'B'],
+  A: ['S', 'A'],
+  S: ['S'],
+};
+
+const PLATFORM_COLUMNS = {
+  windows: gameInfo.platformWindows,
+  mac: gameInfo.platformMac,
+  linux: gameInfo.platformLinux,
+} as const;
 
 /** wspólny kształt wiersza-karty gry (kNN + join game_info) */
 type GameCardRow = {
@@ -440,7 +457,11 @@ export const embeddingService = {
      */
     async recommendForUser(
       userId: string,
-      { limit = 20, cursor }: { limit?: number; cursor?: number } = {},
+      {
+        limit = 20,
+        cursor,
+        ...filters
+      }: { limit?: number; cursor?: number } & RecommendationFilters = {},
     ) {
       const safeLimit = Math.min(limit, 50);
 
@@ -473,6 +494,18 @@ export const embeddingService = {
       const conditions = [eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION)];
       if (ownedIds.length) conditions.push(notInArray(gameEmbeddings.steamAppid, ownedIds));
       if (cursor !== undefined) conditions.push(sql`(${similarityExpr}) < ${cursor}`);
+
+      if (filters.isFree !== undefined) conditions.push(eq(gameInfo.isFree, filters.isFree));
+      if (filters.minDiscount !== undefined)
+        conditions.push(gte(gameInfo.priceDiscountPercent, filters.minDiscount));
+      if (filters.minReviewTier)
+        conditions.push(inArray(gameInfo.reviewTier, REVIEW_TIER_ALLOWED[filters.minReviewTier]));
+      if (filters.yearFrom !== undefined)
+        // release_date is free-form text like "19 Nov, 2021"; take the first 4-digit year
+        conditions.push(
+          sql`substring(${gameInfo.releaseDate} from '[0-9]{4}')::int >= ${filters.yearFrom}`,
+        );
+      if (filters.platform) conditions.push(eq(PLATFORM_COLUMNS[filters.platform], true));
 
       const rows = await db
         .select({

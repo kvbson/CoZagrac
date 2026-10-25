@@ -7,6 +7,7 @@ import {
   UpdateUserParams,
 } from '@cozagrac/shared/contracts/api';
 import { userService } from '../services/user.service.js';
+import { libraryService } from '../services/library.service.js';
 import { getSessionUserId } from '../functions/setUserSession.js';
 import { hashPassword } from '../utils/hash.js';
 
@@ -100,4 +101,17 @@ export const me = (req: Request, res: Response) => {
   }
 
   res.json({ userId });
+};
+
+/* =========================
+   STEAM LIBRARY
+========================= */
+
+export const getUserLibrary = async (req: Request, res: Response) => {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return res.sendStatus(401);
+  }
+
+  return res.json(await libraryService.getLibrary(userId));
 };

@@ -5,6 +5,9 @@ import { AuthGate } from './features/auth/AuthGate';
 import { AuthPage } from './pages/AuthPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { GameDetailsPage } from './pages/GameDetailsPage';
+import { SearchPage } from './pages/SearchPage';
+import { LibraryPage } from './pages/LibraryPage';
+import { AccountPage } from './pages/AccountPage';
 import { AppLayout } from './components/layout/AppLayout';
 
 const queryClient = new QueryClient({
@@ -34,6 +37,9 @@ export function App() {
               <Route path="/" element={<Navigate to="/recommendations" replace />} />
               <Route path="/recommendations" element={<RecommendationsPage />} />
               <Route path="/games/:appId" element={<GameDetailsPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/account" element={<AccountPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,4 +1,5 @@
-import { eq, inArray, and, isNull } from 'drizzle-orm';
+import { eq, inArray, and, isNull, sql } from 'drizzle-orm';
+import type { GameSearchItem } from '@cozagrac/shared/contracts/api';
 import { db } from '../db/init.js';
 import {
   gameInfo,
@@ -112,6 +113,43 @@ export const gameService = {
 
   async getGameScreenshots(appId: number) {
     return db.select().from(gameScreenshots).where(eq(gameScreenshots.steamAppid, appId));
+  },
+
+  /**
+   * Full text search over game_info.search_vector (GIN index, 'english' config -
+   * see db/scripts/postgre_schema.sql trigger).
+   */
+  async search(q: string, limit: number): Promise<GameSearchItem[]> {
+    const tsquery = sql`websearch_to_tsquery('english', ${q})`;
+    const rank = sql<number>`ts_rank(${gameInfo.searchVector}, ${tsquery})`;
+
+    const rows = await db
+      .select({
+        steamAppid: gameInfo.steamAppid,
+        name: gameInfo.name,
+        headerImage: gameInfo.headerImage,
+        isFree: gameInfo.isFree,
+        priceFinalFormatted: gameInfo.priceFinalFormatted,
+        priceDiscountPercent: gameInfo.priceDiscountPercent,
+        reviewTier: gameInfo.reviewTier,
+        rank,
+      })
+      .from(gameInfo)
+      .where(sql`${gameInfo.searchVector} @@ ${tsquery}`)
+      .orderBy(sql`${rank} DESC`, gameInfo.name)
+      .limit(limit);
+
+    return rows
+      .filter((row): row is typeof row & { name: string } => row.name !== null)
+      .map((row) => ({
+        steamAppid: row.steamAppid,
+        name: row.name,
+        headerImage: row.headerImage,
+        isFree: row.isFree,
+        priceFinalFormatted: row.priceFinalFormatted,
+        priceDiscountPercent: row.priceDiscountPercent,
+        reviewTier: row.reviewTier,
+      }));
   },
 
   async getByAppId(appId: number): Promise<GameInfoResult | null> {

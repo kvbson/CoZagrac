@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { GameReviewsSort } from '@cozagrac/shared/contracts/api';
+import { useSearchParams } from 'react-router-dom';
+import type { GameReviewsLanguage, GameReviewsSort } from '@cozagrac/shared/contracts/api';
 import { Button } from '../../components/ui/Button';
 import { ReviewCard } from './ReviewCard';
 import { useGameReviews } from './useGameReviews';
@@ -10,9 +10,42 @@ const SORT_OPTIONS: { value: GameReviewsSort; label: string }[] = [
   { value: 'popularity', label: 'Most liked' },
 ];
 
+const LANGUAGE_OPTIONS: { value: GameReviewsLanguage; label: string }[] = [
+  { value: 'all', label: 'All languages' },
+  { value: 'english', label: 'English' },
+  { value: 'polish', label: 'Polish' },
+];
+
+function readSort(value: string | null): GameReviewsSort {
+  if (value === 'highestRating' || value === 'popularity') return value;
+  return 'newest';
+}
+
+function readLanguage(value: string | null): GameReviewsLanguage {
+  if (value === 'english' || value === 'polish') return value;
+  return 'all';
+}
+
+/**
+ * Stan sortu i języka trzymany w URL-u (searchParams) - link z ustawionym
+ * filtrem jest udostępnialny, a refresh zachowuje widok.
+ */
 export function ReviewSection({ steamAppid }: { steamAppid: number }) {
-  const [sort, setSort] = useState<GameReviewsSort>('newest');
-  const reviewsQuery = useGameReviews(steamAppid, sort);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sort = readSort(searchParams.get('sort'));
+  const language = readLanguage(searchParams.get('lang'));
+
+  function setFilterParam(key: string, value: string, defaultValue: string) {
+    const next = new URLSearchParams(searchParams);
+    if (value === defaultValue) {
+      next.delete(key);
+    } else {
+      next.set(key, value);
+    }
+    setSearchParams(next, { replace: true });
+  }
+
+  const reviewsQuery = useGameReviews(steamAppid, sort, language);
 
   const pages = reviewsQuery.data?.pages ?? [];
   const items = pages.flatMap((page) => page.userData?.items ?? []);
@@ -32,17 +65,31 @@ export function ReviewSection({ steamAppid }: { steamAppid: number }) {
       <div className="page__header">
         <h2>Player reviews{total ? ` (${total})` : ''}</h2>
 
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as GameReviewsSort)}
-          aria-label="Sort reviews"
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="reviews__filters">
+          <select
+            value={language}
+            onChange={(e) => setFilterParam('lang', e.target.value, 'all')}
+            aria-label="Filter reviews by language"
+          >
+            {LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sort}
+            onChange={(e) => setFilterParam('sort', e.target.value, 'newest')}
+            aria-label="Sort reviews"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {reviewsQuery.isPending && <p>Loading reviews…</p>}

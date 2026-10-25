@@ -63,11 +63,17 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 - Odpowiedzi błędu: `res.status(N).json({ message })` — frontendowy `fetchApi` to parsesuje
   do `ServiceResponse.error.message`.
 - Bieżące endpointy: `POST /api/auth/register|login|logout`, `GET /api/auth/steam`,
-  `GET /api/user/me`, CRUD `/api/user/:userId`, `GET /api/user/me/recommendations?limit&cursor`,
-  `POST /api/user/me/embedding`, `GET /api/game?appId=`, `GET /api/game/similar?appId&limit`,
-  `GET /api/reviews/:steamAppid?page&limit&sort`, `GET /api/health`.
+  `GET /api/user/me`, CRUD `/api/user/:userId` (PATCH/DELETE), `GET /api/user/me/library`,
+  `GET /api/user/me/recommendations?limit&cursor&isFree&minDiscount&minReviewTier&yearFrom&platform`,
+  `POST /api/user/me/embedding` (job 202) + `GET /api/user/me/embedding/status`,
+  `GET /api/game?appId=`, `GET /api/game/search?q&limit` (FTS na `search_vector`),
+  `GET /api/game/similar?appId&limit`, `GET /api/reviews/:steamAppid?page&limit&sort&language`,
+  `GET /api/health`.
 - Kwirki API: **recenzje zwracają 404 gdy puste** (frontend mapuje na stan pusty);
-  `recommendations` zwraca 200 z `hasEmbedding: false` gdy brak profilu (frontend pokazuje CTA).
+  `recommendations` zwraca 200 z `hasEmbedding: false` gdy brak profilu (frontend pokazuje CTA);
+  `POST /user/me/embedding` jest **asynchroniczne** (job w pamięci serwera, status przez
+  `GET /embedding/status`; restart serwera kasuje statusy → `idle`);
+  `review_tier` to **tier popularności** (`S/A/B` = ≥10k/5k/1k recenzji, nie ocena).
 
 ### Rekomendacje (rdzeń pracy inżynierskiej — nie psuj metodologii)
 `apps/backend/src/services/embeddings.service.ts`:

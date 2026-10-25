@@ -1,5 +1,6 @@
 import { desc, eq, sql, and } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import type { GameReviewsLanguage } from '@cozagrac/shared/contracts/api';
 import { db } from '../db/init.js';
 import { gameReviews } from '../drizzle/schema.js';
 import { Tx } from '../types/db.types.js';
@@ -68,6 +69,7 @@ export const reviewService = {
     page: number,
     limit: number,
     sort: 'newest' | 'highestRating' | 'popularity',
+    language: GameReviewsLanguage = 'all',
   ) {
     const safeLimit = Math.min(limit, 100);
     const offset = (page - 1) * safeLimit;
@@ -78,19 +80,21 @@ export const reviewService = {
       popularity: gameReviews.votesUp,
     };
 
+    const where =
+      language === 'all'
+        ? eq(gameReviews.steamAppid, steamAppid)
+        : and(eq(gameReviews.steamAppid, steamAppid), eq(gameReviews.language, language));
+
     const [items, [{ count }]] = await Promise.all([
       db
         .select()
         .from(gameReviews)
-        .where(eq(gameReviews.steamAppid, steamAppid))
+        .where(where)
         .orderBy(desc(sorts[sort]))
         .limit(safeLimit)
         .offset(offset),
 
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(gameReviews)
-        .where(eq(gameReviews.steamAppid, steamAppid)),
+      db.select({ count: sql<number>`count(*)` }).from(gameReviews).where(where),
     ]);
 
     return {
