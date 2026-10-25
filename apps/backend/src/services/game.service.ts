@@ -296,7 +296,7 @@ async function syncCategories(tx: Tx, steamAppid: number, incomingSteamIds: stri
   await tx.insert(gameCategories).values(
     categoryRows.map((c) => ({
       steamAppid,
-      categoryId: c.id, // UUID ✅
+      categoryId: c.id,
     })),
   );
 }
