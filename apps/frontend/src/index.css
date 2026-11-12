@@ -139,7 +139,9 @@ button:disabled {
 }
 button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--bg-page),
+    0 0 0 4px var(--accent);
 }
 
 input {
@@ -151,7 +153,9 @@ input {
   background: var(--bg-deep);
   color: var(--text);
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 input::placeholder {
   color: var(--muted);
@@ -211,7 +215,9 @@ select {
   color: var(--text-soft);
   padding: 4px 2px;
   border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .navbar__links a:hover {
   color: #ffffff;
@@ -310,11 +316,16 @@ select {
   border-radius: 4px;
   overflow: hidden;
   background: linear-gradient(180deg, var(--bg-panel), #131c27);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 .card:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 18px var(--glow), 0 10px 24px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 18px var(--glow),
+    0 10px 24px rgba(0, 0, 0, 0.45);
   transform: translateY(-2px);
 }
 
@@ -805,4 +816,60 @@ select {
   .auth-page {
     margin: 40px auto;
   }
+}
+/* ===== consent banner ===== */
+
+.consent-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--bg-panel), #131c27);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.consent-banner p {
+  margin: 0;
+  flex: 1 1 320px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.consent-banner__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.consent-banner__actions button {
+  font-size: 0.75rem;
+  padding: 0.5em 1.1em;
+}
+
+/* ===== privacy page ===== */
+
+.privacy {
+  max-width: 760px;
+}
+
+.privacy h2 {
+  margin-top: 32px;
+}
+
+.privacy ul {
+  padding-left: 20px;
+  color: var(--text-soft);
+}
+
+.privacy button {
+  margin: 4px 0 12px;
 }

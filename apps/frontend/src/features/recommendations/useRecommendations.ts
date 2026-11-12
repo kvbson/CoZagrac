@@ -13,6 +13,7 @@ import type {
   UserRecommendationsResponse,
 } from '@cozagrac/shared/contracts/api';
 import type { ServiceResponse } from '../../types/response';
+import { trackEvent } from '../analytics/analytics';
 import { recommendationService } from '../../services/recommendationService';
 import { favoritesService } from '../../services/favoritesService';
 
@@ -119,6 +120,10 @@ export function useRecommendations(filters: RecommendationFilters) {
     async (input: BuildProfileInput) => {
       try {
         await buildMutation.mutateAsync(input);
+        trackEvent('build_profile', {
+          source: input.source,
+          manual_games: input.appIds?.length ?? 0,
+        });
         return true;
       } catch {
         return false;

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { RecommendationFilters } from '@cozagrac/shared/contracts/api';
 import { Button } from '../components/ui/Button';
 import { AuthContext } from '../context/AuthContext';
+import { trackEvent } from '../features/analytics/analytics';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
 import { useRecommendations } from '../features/recommendations/useRecommendations';
 import { ProfileWizard } from '../features/profile/ProfileWizard';
@@ -99,6 +100,8 @@ export function RecommendationsPage() {
   } = useRecommendations(filters);
 
   function setFilterParam(key: string, value: string) {
+    trackEvent('apply_filter', { filter: key, value: value === '' ? 'any' : value });
+
     const next = new URLSearchParams(searchParams);
     if (value === '') {
       next.delete(key);
