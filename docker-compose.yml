@@ -1,0 +1,38 @@
+# Edge is the HOST nginx (Ubuntu + certbot) - see docs/wdrozenie_aplikacji_vps.md.
+# Containers deliberately bind to loopback only; 80/443 belong to the host nginx
+# (vhost template: nginx/co-zagrac.pl.conf).
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - '127.0.0.1:3001:3001'
+    env_file:
+      - ./apps/backend/.env
+    # PostgreSQL runs on the VPS host, not in compose - DATABASE_URL must point
+    # at host.docker.internal:5432 (DB_SSL=disable); see README and
+    # docs/wdrozenie_aplikacji_vps.md section 4.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - '127.0.0.1:8081:80'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
