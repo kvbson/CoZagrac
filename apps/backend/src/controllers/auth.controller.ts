@@ -2,15 +2,19 @@ import { setSessionUser } from '../functions/setUserSession.js';
 import { userService } from '../services/user.service.js';
 import { Request, Response } from 'express';
 import { hashPassword } from '../utils/hash.js';
-import { LoginUserInput } from '@cozagrac/shared/contracts/api';
+import { registerUserHttpSchema, type LoginUserInput, type RegisterUserInput } from '@cozagrac/shared/contracts/api';
 import bcrypt from 'bcrypt';
 
 /* =========================
    REGISTER (email + password)
 ========================= */
 
-export const register = async (req: Request<object, object, LoginUserInput>, res: Response) => {
-  const { email, password } = req.body;
+export const register = async (req: Request<object, object, RegisterUserInput>, res: Response) => {
+  const { email, password, acceptedPrivacyPolicy } = registerUserHttpSchema.parse(req).body;
+
+  if (!acceptedPrivacyPolicy) {
+    return res.status(400).json({ message: 'You must accept the privacy policy.' });
+  }
 
   const existing = await userService.getByEmail(email);
   if (existing) {

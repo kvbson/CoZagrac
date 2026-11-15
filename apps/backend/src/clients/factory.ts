@@ -1,9 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
+import { env } from '../env.js';
 
 export const createApiClient = (baseURL: string): AxiosInstance => {
-  if (!process.env.STEAM_API_KEY) {
-    throw new Error('STEAM_API_KEY is not defined');
-  }
   const api = axios.create({
     baseURL,
     timeout: 15000,
@@ -12,7 +10,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
       'User-Agent': 'CoZagrac/0.0.0',
     },
     params: {
-      key: process.env.STEAM_API_KEY,
+      key: env.STEAM_API_KEY,
     },
   });
 

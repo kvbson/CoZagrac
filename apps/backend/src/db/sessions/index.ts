@@ -1,6 +1,7 @@
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import { isDev } from '../../config/runtime.js';
+import { env } from '../../env.js';
 import { pool } from '../init.js';
 
 const PgStore = connectPgSimple(session);
@@ -10,7 +11,7 @@ export const pgSession = session({
     pool,
     tableName: 'sessions',
   }),
-  secret: process.env.SESSION_SECRET!,
+  secret: env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {

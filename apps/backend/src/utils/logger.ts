@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
+import { env } from '../env.js';
 
 const LOG_DIR = path.resolve(process.cwd(), 'logs');
-const NODE_ENV = process.env.NODE_ENV ?? 'development';
+const NODE_ENV = env.NODE_ENV;
 
 type LogTypes = 'debug' | 'info' | 'warn' | 'error';
 
