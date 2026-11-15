@@ -14,6 +14,7 @@ import {
 } from '../../controllers/recommendation.controller.js';
 import { getFavorites, setFavorites } from '../../controllers/favorites.controller.js';
 import {
+  deleteAllRatings,
   deleteRating,
   getRatings,
   putRating,
@@ -30,6 +31,7 @@ import {
   setUserFavoritesHttpSchema,
   putUserRatingHttpSchema,
   deleteUserRatingHttpSchema,
+  deleteAllUserRatingsHttpSchema,
 } from '@cozagrac/shared/contracts/api';
 
 const router = Router();
@@ -87,6 +89,9 @@ router.get('/me/ratings', requireAuth, getRatings);
 
 // PUT /user/me/ratings - upsert a single rating { steamAppid, rating }
 router.put('/me/ratings', requireAuth, validate(putUserRatingHttpSchema), putRating);
+
+// DELETE /user/me/ratings - clear every rating (full feedback reset)
+router.delete('/me/ratings', requireAuth, validate(deleteAllUserRatingsHttpSchema), deleteAllRatings);
 
 // DELETE /user/me/ratings/:steamAppid - remove a rating (idempotent)
 router.delete(

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { RatingSlider } from '../../components/ui/RatingSlider';
 import type {
   ProfileSource,
   UserEmbeddingStatusResponse,
@@ -26,11 +27,11 @@ const STEP_LABELS: Record<string, string> = {
   'manual-games': 'the games you picked',
 };
 
-/** ścieżka Steam pomija krok wyboru gier: build jest tam krokiem 2 z 2 */
+/** ścieżka Steam: source → rate → build (3 kroki); manual: source → games → build */
 function getStepNumber(step: WizardStep, source: ProfileSource | null): number {
   if (step === 'source') return 1;
-  if (step === 'games') return 2;
-  return source === 'steam-library' ? 2 : 3;
+  if (step === 'games' || step === 'rate') return 2;
+  return source === 'steam-library' ? 3 : 2;
 }
 
 export function ProfileWizard({
@@ -56,7 +57,8 @@ export function ProfileWizard({
   const searchItems = wizard.searchQuery.data?.userData?.items ?? [];
   const searching = wizard.searchQuery.isFetching && wizard.submitted !== '';
   const stepNumber = getStepNumber(wizard.step, wizard.source);
-  const totalSteps = wizard.source === 'steam-library' ? 2 : 3;
+  const totalSteps = wizard.source === 'steam-library' ? 3 : 2;
+  const ratedCount = Object.keys(wizard.ratings).length;
 
   return (
     <section className="wizard">
@@ -188,6 +190,51 @@ export function ProfileWizard({
           {!wizard.canBuild && (
             <p className="muted">Select at least {wizard.minGames} games to continue.</p>
           )}
+        </>
+      )}
+
+      {wizard.step === 'rate' && (
+        <>
+          <p className="muted">
+            Optional: rate your most played games (1 = dislike, 5 = love it). Ratings weight
+            your profile — skip by just continuing.
+          </p>
+
+          {wizard.libraryLoading && <p className="muted">Loading your library…</p>}
+
+          {!wizard.libraryLoading && wizard.rateCandidates.length === 0 && (
+            <p className="muted">
+              No catalog games from your library to rate — you can continue without ratings.
+            </p>
+          )}
+
+          <div className="rec-grid">
+            {wizard.rateCandidates.map((game) => (
+              <Card key={game.steamAppid}>
+                <img
+                  className="card__img"
+                  src={game.headerImage ?? undefined}
+                  alt=""
+                  loading="lazy"
+                />
+                <div className="card__body">
+                  <h3>{game.name}</h3>
+                  <RatingSlider
+                    rating={wizard.ratings[game.steamAppid]}
+                    onRate={(value) => wizard.setRating(game.steamAppid, value)}
+                    label={game.name}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="wizard__nav">
+            <Button onClick={wizard.back}>Back</Button>
+            <Button onClick={wizard.goBuild}>
+              {ratedCount > 0 ? `Continue (${ratedCount} rated)` : 'Skip and continue'}
+            </Button>
+          </div>
         </>
       )}
 

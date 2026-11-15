@@ -256,6 +256,13 @@ select {
   margin: 0;
 }
 
+.page__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .center {
   display: flex;
   flex-direction: column;
@@ -332,8 +339,9 @@ select {
 .card__img {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  aspect-ratio: 460 / 215;
+  object-fit: contain;
+  background: var(--bg-panel);
 }
 .card__img--empty {
   display: flex;
@@ -389,35 +397,141 @@ select {
   color: #ffffff;
 }
 
-/* ===== rating (feedback loop) ===== */
+/* ===== rating slider (feedback loop) ===== */
 
-.rating {
+.rating-slider {
   display: flex;
-  gap: 2px;
-}
-
-.card__body .rating {
+  align-items: center;
+  gap: 10px;
   margin-top: 8px;
 }
 
-.rating__star {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 1.05rem;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.18);
+.rating-slider input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  accent-color: var(--accent);
   cursor: pointer;
-  transition: color 0.12s ease, transform 0.12s ease;
 }
-.rating__star--active {
-  color: var(--accent);
-}
-.rating__star:hover:not(:disabled) {
-  transform: scale(1.15);
-}
-.rating__star:disabled {
+.rating-slider input[type='range']:disabled {
   cursor: default;
+  opacity: 0.6;
+}
+
+.rating-slider__value {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  min-width: 2rem;
+  text-align: right;
+}
+
+/* ===== view toggle (grid / details) ===== */
+
+.view-toggle {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.view-toggle__btn {
+  padding: 0.5em 0.7em;
+  line-height: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--text-soft);
+  box-shadow: none;
+}
+.view-toggle__btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: #ffffff;
+  filter: none;
+  box-shadow: none;
+}
+.view-toggle__btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #10222f;
+}
+
+.gametable-wrap {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--bg-panel), #131c27);
+  overflow-x: auto;
+}
+
+.gametable {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.92rem;
+}
+
+.gametable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--accent);
+  background: var(--bg-panel-2);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+
+.gametable__sort-btn {
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  box-shadow: none;
+  cursor: pointer;
+}
+.gametable__sort-btn:hover:not(:disabled) {
+  color: #ffffff;
+  filter: none;
+  box-shadow: none;
+}
+
+.gametable__sort-mark {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.gametable td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.gametable tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.gametable__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gametable__img {
+  display: block;
+  width: 92px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 /* ===== messages (toasts) ===== */
@@ -868,86 +982,88 @@ select {
 
 .privacy button {
   margin: 4px 0 12px;
-  /* ===== mobile =====
+}
+
+/* ===== mobile =====
    pasek nawigacji nie mieści się w jednym rzędzie -> dwa rzędy:
    [brand | linki] / [wyszukiwarka na całą szerokość] */
-  @media (max-width: 768px) {
-    .navbar {
-      flex-wrap: wrap;
-      gap: 10px 12px;
-      padding: 10px 16px;
-    }
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 10px 16px;
+  }
 
-    .navbar__search {
-      order: 3;
-      flex: 1 1 100%;
-      max-width: none;
-      margin: 0;
-    }
+  .navbar__search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+    margin: 0;
+  }
 
-    .navbar__links {
-      margin-left: auto;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 8px 14px;
-    }
+  .navbar__links {
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 14px;
+  }
 
-    .navbar__links a {
-      font-size: 0.74rem;
-      letter-spacing: 0.04em;
-    }
+  .navbar__links a {
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+  }
 
-    .navbar__links button {
-      padding: 0.4em 0.9em;
-      font-size: 0.74rem;
-    }
+  .navbar__links button {
+    padding: 0.4em 0.9em;
+    font-size: 0.74rem;
+  }
 
-    .page {
-      padding: 20px 16px;
-    }
+  .page {
+    padding: 20px 16px;
+  }
 
-    h1 {
-      font-size: 1.5rem;
-    }
+  h1 {
+    font-size: 1.5rem;
+  }
 
-    h2 {
-      font-size: 1.2rem;
-    }
+  h2 {
+    font-size: 1.2rem;
+  }
 
-    /* przycisk (np. "Recalculate profile") pod tytułem, na całą szerokość */
-    .page__header {
-      flex-direction: column;
-      align-items: stretch;
-    }
+  /* przycisk (np. "Recalculate profile") pod tytułem, na całą szerokość */
+  .page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-    .page__header > button {
-      align-self: flex-start;
-    }
+  .page__header > button,
+  .page__actions {
+    align-self: flex-start;
+  }
 
-    .filters {
-      gap: 8px 12px;
-    }
+  .filters {
+    gap: 8px 12px;
+  }
 
-    .search-form {
-      max-width: none;
-    }
+  .search-form {
+    max-width: none;
+  }
 
-    .wizard__options {
-      max-width: none;
-    }
+  .wizard__options {
+    max-width: none;
+  }
 
-    .game-hero__img {
-      max-width: none;
-    }
+  .game-hero__img {
+    max-width: none;
+  }
 
-    .video-thumb,
-    .video-thumb img {
-      max-width: 120px;
-      width: 120px;
-    }
+  .video-thumb,
+  .video-thumb img {
+    max-width: 120px;
+    width: 120px;
+  }
 
-    .auth-page {
-      margin: 40px auto;
-    }
+  .auth-page {
+    margin: 40px auto;
   }
 }

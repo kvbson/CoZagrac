@@ -49,6 +49,7 @@ Po aplikacji `verify.sql` oczekuje: **21 tabel, 26 indeksów**.
 | `GET /api/user/me/ratings` | wszystkie oceny użytkownika (z `name`/`headerImage` z katalogu — stan UI) | 200 `{ items: UserRating[] }` |
 | `PUT /api/user/me/ratings` | upsert jednej oceny `{ steamAppid, rating: 1–5 }` (ostatni zapis wygrywa) | 200 `{ steamAppid, rating }` |
 | `DELETE /api/user/me/ratings/:steamAppid` | usunięcie oceny | 204 (idempotentne) |
+| `DELETE /api/user/me/ratings` | **reset wszystkich ocen** (pełny reset pętli feedbacku) | 204 |
 
 - Gra spoza katalogu → `422` (walidacja przed zapisem; FK rzuciłoby 500).
 - Walidacja wejścia: kontrakty Zod w `apps/shared/contracts/api.ts`
@@ -138,24 +139,33 @@ asynchroniczny job (`POST /api/user/me/embedding` + `GET /embedding/status`).
 
 | Element | Plik | Rola |
 |---|---|---|
-| Serwis ocen | `apps/frontend/src/services/ratingsService.ts` | `get`/`set`/`remove` na `fetchApi` |
-| Hook feedbacku | `apps/frontend/src/features/recommendations/useRatings.ts` | cache ocen + mutation z efektami optymistycznymi |
-| Gwiazdki | `apps/frontend/src/components/ui/RatingStars.tsx` | prezentacyjny 1–5 z hover i aria-label |
+| Serwis ocen | `apps/frontend/src/services/ratingsService.ts` | `get`/`set`/`remove`/`removeAll` na `fetchApi` |
+| Hook feedbacku | `apps/frontend/src/features/recommendations/useRatings.ts` | cache ocen + mutation z efektami optymistycznymi + `resetAll` |
+| Suwak oceny | `apps/frontend/src/components/ui/RatingSlider.tsx` | 1–5, commit na zwolnieniu (jeden gest = jeden zapis) |
 | Komunikaty | `apps/frontend/src/context/MessageContext.ts` + `MessageProvider.tsx` | toasty (success/error/info), auto-dismiss 5 s |
-| Karta rekomendacji | `features/recommendations/RecommendationCard.tsx` | gwiazdki; propsy `rating`/`onRate` opcjonalne |
-| Lista rekomendacji | `features/recommendations/RecommendationList.tsx` | `useRatings({ removeFromRecommendations: true })` |
-| Biblioteka | `pages/LibraryPage.tsx` | gwiazdki przy grach z katalogu; `removeFromRecommendations: false` (gra zostaje na liście) |
+| Karta rekomendacji | `features/recommendations/RecommendationCard.tsx` | suwak; propsy `rating`/`onRate` opcjonalne |
+| Lista rekomendacji | `features/recommendations/RecommendationList.tsx` / `RecommendationsTable.tsx` | `useRatings({ removeFromRecommendations: true })` — widok grid i tabela |
+| Biblioteka | `pages/LibraryPage.tsx` + `features/games/LibraryTable.tsx` | suwak przy grach z katalogu; `removeFromRecommendations: false`; przycisk „Reset all ratings" |
+| Kreator profilu | `features/profile/ProfileWizard.tsx` | **krok „rate your games"** dla ścieżki steam-library: ocena (opcjonalna) top-10 najgranych gier przed buildem |
 
 Zachowanie:
 
-- **Optymistyczne usunięcie z rekomendacji** — `onMutate` filtruje ocenioną grę ze wszystkich
-  zbuforowanych stron infinite query (`queryClient.setQueriesData`), zanim serwer odpowie;
-  stan ocen odświeżany w `onSettled`.
-- **Komunikaty** — sukces: „Rating saved."; błąd: „Could not save your rating. Please try
-  again." (aplikacja nie ma globalnego bannera błędów — toasty są jedynym kanałem).
-  Stylistyka na tokenach projektu (`--bg-panel`, `--line-strong`, `--green`, `--sale`,
-  `--accent`), animacja wjazdu, `aria-live="polite"`.
+- **Odświeżanie po ocenie**: `onSuccess` aktualizuje optymistycznie cache `['ratings']`
+  (kontrolka wypełnia się od razu) i **unieważnia `['recommendations']`** — korekta centroidu
+  działa w czasie zapytania, więc zbuforowana kolejność sprzed oceny jest nieaktualna.
+  W rekomendacjach dodatkowo oceniona gra znika z listy optymistycznie (`onMutate`).
+- **Reset wszystkich ocen** (przycisk w bibliotece): `DELETE /api/user/me/ratings` →
+  invalidacja `['ratings']` i `['recommendations']` → rekomendacje wracają do stanu
+  sprzed feedbacku.
+- **Krok ratingów w kreatorze**: ścieżka steam-library to teraz source → rate (top-10 najgranych
+  gier z katalogu, opcjonalne) → build; oceny zapisywane w `startBuild` przez
+  `Promise.allSettled` — nieudany zapis nie blokuje builda (toast o błędzie).
+- **Komunikaty** — sukces: „Rating saved." / „All ratings cleared."; błąd: „Could not save
+  your rating. Please try again." (aplikacja nie ma globalnego bannera błędów — toasty są
+  jedynym kanałem). Stylistyka na tokenach projektu, animacja wjazdu, `aria-live="polite"`.
 - React Query jest jedynym właścicielem stanu serwera (zgodnie z konwencją projektu).
+- Widok listy/tabeli (grid ↔ details jak w Eksploratorze Windows, wybór zapamiętywany
+  w localStorage) — patrz `docs/widok_listy_gier.md`.
 
 ## 6. Testy
 
@@ -182,10 +192,11 @@ logika domeny jest w czystych funkcjach, a warstwa DB jest cienka.
 `test/rating.helpers.spec.ts` (nowy).
 
 **Frontend:** `services/ratingsService.ts` (nowy),
-`features/recommendations/useRatings.ts` (nowy), `components/ui/RatingStars.tsx` (nowy),
+`features/recommendations/useRatings.ts` (nowy), `components/ui/RatingSlider.tsx` (nowy),
 `context/MessageContext.ts` + `MessageProvider.tsx` (nowe),
+`features/profile/useProfileWizard.ts` + `ProfileWizard.tsx` (krok rate),
 `features/recommendations/RecommendationCard.tsx` + `RecommendationList.tsx`,
-`pages/LibraryPage.tsx`, `App.tsx` (MessageProvider), `index.css` (`.rating`, `.messages`).
+`pages/LibraryPage.tsx`, `App.tsx` (MessageProvider), `index.css` (`.rating-slider`, `.messages`).
 
 ## 8. Co dalej (rozdz. „Testy i analiza wyników")
 

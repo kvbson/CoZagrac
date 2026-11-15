@@ -66,7 +66,7 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
   `GET /api/user/me` (zwraca też `steamLinked`), CRUD `/api/user/:userId` (PATCH/DELETE),
   `GET /api/user/me/library`, `GET /api/user/me/recommendations?limit&cursor&isFree&minDiscount&minReviewTier&yearFrom&platform`,
   `GET/PUT /api/user/me/favorites` (ręczna podstawa profilu, 5–50 gier),
-  `GET/PUT /api/user/me/ratings`, `DELETE /api/user/me/ratings/:steamAppid` (oceny 1–5),
+  `GET/PUT /api/user/me/ratings`, `DELETE /api/user/me/ratings` (reset wszystkich), `DELETE /api/user/me/ratings/:steamAppid` (oceny 1–5),
   `POST /api/user/me/embedding` body `{ source: 'steam-library' | 'manual-games' }` (job 202) +
   `GET /api/user/me/embedding/status`,
   `GET /api/game?appId=`, `GET /api/game/search?q&limit` (FTS na `search_vector`),

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { RecommendationItem } from '@cozagrac/shared/contracts/api';
 import { Card } from '../../components/ui/Card';
-import { RatingStars } from '../../components/ui/RatingStars';
+import { RatingSlider } from '../../components/ui/RatingSlider';
 
 type Props = {
   item: RecommendationItem;
@@ -43,7 +43,7 @@ export function RecommendationCard({ item, rating, onRate }: Props) {
         </div>
 
         {onRate ? (
-          <RatingStars rating={rating} onRate={onRate} />
+          <RatingSlider rating={rating} onRate={onRate} label={item.name} />
         ) : null}
 
         <a href={storeUrl} target="_blank" rel="noreferrer">

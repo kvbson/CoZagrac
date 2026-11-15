@@ -237,6 +237,9 @@ export const deleteUserRatingHttpSchema = z.object({
 
 export type DeleteUserRatingParams = z.infer<typeof deleteUserRatingHttpSchema>['params'];
 
+/** DELETE /user/me/ratings - clears every rating of the user (feedback reset). */
+export const deleteAllUserRatingsHttpSchema = z.object({});
+
 export type UserRating = {
   steamAppid: number;
   rating: number;

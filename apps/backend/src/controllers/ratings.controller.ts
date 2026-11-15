@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import {
+  deleteAllUserRatingsHttpSchema,
   deleteUserRatingHttpSchema,
   putUserRatingHttpSchema,
 } from '@cozagrac/shared/contracts/api';
@@ -49,5 +50,18 @@ export const deleteRating = async (req: Request, res: Response) => {
   await ratingsService.remove(userId, steamAppid);
 
   // idempotent: 204 regardless of whether the rating existed
+  return res.sendStatus(204);
+};
+
+export const deleteAllRatings = async (req: Request, res: Response) => {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return res.sendStatus(401);
+  }
+
+  deleteAllUserRatingsHttpSchema.parse(req);
+
+  await ratingsService.removeAll(userId);
+
   return res.sendStatus(204);
 };

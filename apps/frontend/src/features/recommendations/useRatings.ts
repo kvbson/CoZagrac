@@ -1,4 +1,4 @@
-import type { UserRecommendationsResponse } from '@cozagrac/shared/contracts/api';
+import type { UserRecommendationsResponse, UserRatingsResponse } from '@cozagrac/shared/contracts/api';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useMemo } from 'react';
@@ -64,6 +64,20 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
   const rateMutation = useMutation({
     mutationFn: (input: { steamAppid: number; rating: number }) =>
       ratingsService.set(input.steamAppid, input.rating),
+    // optimistic: rating state updates instantly (control fills in) and the
+    // recommendation lists refetch - the engine corrects the centroid at
+    // query time, so any cached ordering from before the rating is stale
+    onSuccess: (res) => {
+      const saved = res.userData;
+      if (!saved) return;
+
+      queryClient.setQueryData<UserRatingsResponse>(['ratings'], (current) => {
+        if (!current) return current;
+        const rest = current.items.filter((item) => item.steamAppid !== saved.steamAppid);
+        return { items: [...rest, { ...saved, name: '', headerImage: null }] };
+      });
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    },
     onMutate: async ({ steamAppid }) => {
       if (!removeFromRecommendations) return;
 
@@ -87,5 +101,27 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
     rateMutation.mutate({ steamAppid, rating });
   };
 
-  return { ratings, rate, ratingPending: rateMutation.isPending };
+  const resetMutation = useMutation({
+    mutationFn: () => ratingsService.removeAll(),
+    onSettled: (_data, error) => {
+      void queryClient.invalidateQueries({ queryKey: ['ratings'] });
+      // ratings influence the query-time centroid correction - refresh lists
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+
+      if (error) {
+        showMessage('error', 'Could not clear your ratings. Please try again.');
+      } else {
+        showMessage('success', 'All ratings cleared.');
+      }
+    },
+  });
+
+  const resetAll = () => resetMutation.mutate();
+
+  return {
+    ratings,
+    rate,
+    resetAll,
+    ratingPending: rateMutation.isPending || resetMutation.isPending,
+  };
 }

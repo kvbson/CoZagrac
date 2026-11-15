@@ -20,4 +20,8 @@ export const ratingsService = {
 
   remove: async (steamAppid: number): Promise<ServiceResponse<null>> =>
     fetchApi<null>(`/api/user/me/ratings/${steamAppid}`, { method: 'DELETE' }),
+
+  /** clears every rating of the user (full feedback reset) */
+  removeAll: async (): Promise<ServiceResponse<null>> =>
+    fetchApi<null>('/api/user/me/ratings', { method: 'DELETE' }),
 };

@@ -61,6 +61,11 @@ export const ratingsService = {
       .where(and(eq(userGameRatings.userId, userId), eq(userGameRatings.steamAppid, steamAppid)));
   },
 
+  /** Clears every rating of the user (full feedback reset). */
+  async removeAll(userId: string): Promise<void> {
+    await db.delete(userGameRatings).where(eq(userGameRatings.userId, userId));
+  },
+
   /** Appids the user has rated; they leave the recommendation candidate set. */
   async getRatedAppIds(userId: string): Promise<number[]> {
     const rows = await db
