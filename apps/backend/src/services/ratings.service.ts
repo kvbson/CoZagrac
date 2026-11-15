@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import type { UserRating } from '@cozagrac/shared/contracts/api';
 import { db } from '../db/init.js';
-import { gameInfo, userGameRatings } from '../drizzle/schema.js';
+import { gameEmbeddings, gameInfo, userGameRatings } from '../drizzle/schema.js';
 
 /**
  * Explicit user feedback: a 1-5 rating on a single game, written from
@@ -59,5 +59,54 @@ export const ratingsService = {
     await db
       .delete(userGameRatings)
       .where(and(eq(userGameRatings.userId, userId), eq(userGameRatings.steamAppid, steamAppid)));
+  },
+
+  /** Appids the user has rated; they leave the recommendation candidate set. */
+  async getRatedAppIds(userId: string): Promise<number[]> {
+    const rows = await db
+      .select({ steamAppid: userGameRatings.steamAppid })
+      .from(userGameRatings)
+      .where(eq(userGameRatings.userId, userId));
+
+    return rows.map((row) => row.steamAppid);
+  },
+
+  /** Ratings as an appid -> rating lookup for the profile-build weighting. */
+  async getRatingMap(userId: string): Promise<Map<number, number>> {
+    const rows = await db
+      .select({ steamAppid: userGameRatings.steamAppid, rating: userGameRatings.rating })
+      .from(userGameRatings)
+      .where(eq(userGameRatings.userId, userId));
+
+    return new Map(rows.map((row) => [row.steamAppid, row.rating]));
+  },
+
+  /**
+   * Ratings joined with the games' current embeddings - input for the
+   * query-time centroid correction. embeddingVersion passed by the caller
+   * (no import cycle with embeddings.service); games without an embedding
+   * yet simply do not appear here.
+   */
+  async getRatedEmbeddings(
+    userId: string,
+    embeddingVersion: string,
+  ): Promise<{ steamAppid: number; rating: number; embedding: number[] }[]> {
+    const rows = await db
+      .select({
+        steamAppid: userGameRatings.steamAppid,
+        rating: userGameRatings.rating,
+        embedding: gameEmbeddings.embedding,
+      })
+      .from(userGameRatings)
+      .innerJoin(
+        gameEmbeddings,
+        and(
+          eq(gameEmbeddings.steamAppid, userGameRatings.steamAppid),
+          eq(gameEmbeddings.embeddingVersion, embeddingVersion),
+        ),
+      )
+      .where(eq(userGameRatings.userId, userId));
+
+    return rows;
   },
 };

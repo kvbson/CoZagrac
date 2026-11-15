@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { RatingStars } from '../components/ui/RatingStars';
 import { userService } from '../services/userService';
+import { useRatings } from '../features/recommendations/useRatings';
 
 function formatPlaytime(minutes: number): string {
   if (!minutes) return 'no playtime';
@@ -15,6 +17,9 @@ export function LibraryPage() {
     queryKey: ['steam-library'],
     queryFn: () => userService.getLibrary(),
   });
+
+  // library cards keep the game on the list after rating (no removal)
+  const { ratings, rate } = useRatings({ removeFromRecommendations: false });
 
   const data = libraryQuery.data?.userData ?? null;
 
@@ -56,10 +61,15 @@ export function LibraryPage() {
         <h1>Your library ({data.items.length})</h1>
       </div>
 
-      <p className="muted">Sorted by playtime. Games from our catalog link to their details.</p>
+      <p className="muted">
+        Sorted by playtime. Games from our catalog link to their details — rate them (1-5) to
+        tune your recommendations.
+      </p>
 
       <div className="rec-grid">
         {data.items.map((game) => {
+          const rating = ratings.get(game.steamAppid);
+
           const body = (
             <div className="card__body">
               <h3>{game.name}</h3>
@@ -67,6 +77,12 @@ export function LibraryPage() {
                 <span className="badge">{formatPlaytime(game.playtimeForever)}</span>
                 {!game.headerImage && <span className="badge">not in catalog</span>}
               </div>
+              {game.headerImage ? (
+                <RatingStars
+                  rating={rating}
+                  onRate={(value) => rate(game.steamAppid, value)}
+                />
+              ) : null}
             </div>
           );
 

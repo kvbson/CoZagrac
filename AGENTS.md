@@ -66,6 +66,7 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
   `GET /api/user/me` (zwraca też `steamLinked`), CRUD `/api/user/:userId` (PATCH/DELETE),
   `GET /api/user/me/library`, `GET /api/user/me/recommendations?limit&cursor&isFree&minDiscount&minReviewTier&yearFrom&platform`,
   `GET/PUT /api/user/me/favorites` (ręczna podstawa profilu, 5–50 gier),
+  `GET/PUT /api/user/me/ratings`, `DELETE /api/user/me/ratings/:steamAppid` (oceny 1–5),
   `POST /api/user/me/embedding` body `{ source: 'steam-library' | 'manual-games' }` (job 202) +
   `GET /api/user/me/embedding/status`,
   `GET /api/game?appId=`, `GET /api/game/search?q&limit` (FTS na `search_vector`),
@@ -92,9 +93,15 @@ Frontend: `pages/` (routy) + `features/<domain>/` (hooki i komponenty funkcyjne)
 `apps/backend/src/services/embeddings.service.ts`:
 - embedding gry = ważona kombinacja L2: opis (0.4–0.5) + taksonomia (0.15) + recenzje
   pozytywne (~0.7 reszty) + **ujemna** waga recenzji negatywnych; wersja `ACTIVE_EMBEDDING_VERSION` ('v1').
-- embedding użytkownika = centroid (bez wag) embeddingów top-50 gier wg playtime'u (źródło
-  `steam-library`) albo ręcznie wybranych gier ulubionych (źródło `manual-games`,
-  tabela `user_favorite_games`); obie ścieżki zapisują tę samą wersję 'v2-centroid'.
+- embedding użytkownika = **ważony centroid** embeddingów gier (wersja 'v2-centroid'):
+  waga gry = `(1 + log1p(playtime)) × ocena/3` (ocena 3 = neutralna; bez oceny tylko
+  playtime; dla `manual-games` bez playtime'u sam mnożnik oceny) z top-50 gier wg
+  playtime'u (źródło `steam-library`) albo ręcznie wybranych gier ulubionych (źródło
+  `manual-games`, tabela `user_favorite_games`).
+- **pętla informacji zwrotnej (oceny 1–5, tabela `user_game_ratings`)**: gry ocenione
+  wypadają z kandydatów rekomendacji; centroid korygowany w czasie zapytania stylem
+  Rocchio (`utils/rating.helpers.ts`: 4–5 przyciąga, 1–2 odpychają, 3 neutralna,
+  FEEDBACK_WEIGHT=0.5, L2 na wyjściu) — bez przebudowy profilu i bez OpenAI.
   Podstawy NIE zapisujemy w bazie (user wybiera ją przy każdym buildzie w kreatorze na froncie).
 - kNN: `1 - (embedding <=> v::vector)`, odrzucenie gier posiadanych (Steam API `ownedGames`)
   oraz ręcznie wybranych ulubionych, kursor = similarity ostatniego elementu strony.
