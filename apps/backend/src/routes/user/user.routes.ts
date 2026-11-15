@@ -13,6 +13,11 @@ import {
   regenerateUserEmbedding,
 } from '../../controllers/recommendation.controller.js';
 import { getFavorites, setFavorites } from '../../controllers/favorites.controller.js';
+import {
+  deleteRating,
+  getRatings,
+  putRating,
+} from '../../controllers/ratings.controller.js';
 import { requireAuth, requireSameUserParam } from '../../middlewares/requireAuth.js';
 import { validate } from '../../utils/validate.js';
 import {
@@ -23,6 +28,8 @@ import {
   deleteUserHttpSchema,
   getUserRecommendationsHttpSchema,
   setUserFavoritesHttpSchema,
+  putUserRatingHttpSchema,
+  deleteUserRatingHttpSchema,
 } from '@cozagrac/shared/contracts/api';
 
 const router = Router();
@@ -73,6 +80,20 @@ router.put(
   requireAuth,
   validate(setUserFavoritesHttpSchema),
   setFavorites,
+);
+
+// GET /user/me/ratings - explicit 1-5 game ratings (feedback loop state)
+router.get('/me/ratings', requireAuth, getRatings);
+
+// PUT /user/me/ratings - upsert a single rating { steamAppid, rating }
+router.put('/me/ratings', requireAuth, validate(putUserRatingHttpSchema), putRating);
+
+// DELETE /user/me/ratings/:steamAppid - remove a rating (idempotent)
+router.delete(
+  '/me/ratings/:steamAppid',
+  requireAuth,
+  validate(deleteUserRatingHttpSchema),
+  deleteRating,
 );
 
 // POST /user/me/embedding - start (re)building profile embedding (async job, 202)

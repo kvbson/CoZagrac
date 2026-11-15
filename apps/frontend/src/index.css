@@ -48,6 +48,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-wrap: break-word;
   background:
     radial-gradient(1100px 420px at 75% -140px, rgba(69, 167, 230, 0.16), transparent 70%),
     linear-gradient(180deg, var(--bg-page) 0%, #16202c 60%, var(--bg-deep) 100%);
@@ -138,7 +139,9 @@ button:disabled {
 }
 button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--bg-page),
+    0 0 0 4px var(--accent);
 }
 
 input {
@@ -150,7 +153,9 @@ input {
   background: var(--bg-deep);
   color: var(--text);
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 input::placeholder {
   color: var(--muted);
@@ -210,7 +215,9 @@ select {
   color: var(--text-soft);
   padding: 4px 2px;
   border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .navbar__links a:hover {
   color: #ffffff;
@@ -309,11 +316,16 @@ select {
   border-radius: 4px;
   overflow: hidden;
   background: linear-gradient(180deg, var(--bg-panel), #131c27);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 .card:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 18px var(--glow), 0 10px 24px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 18px var(--glow),
+    0 10px 24px rgba(0, 0, 0, 0.45);
   transform: translateY(-2px);
 }
 
@@ -778,4 +790,86 @@ select {
 
 .privacy button {
   margin: 4px 0 12px;
+  /* ===== mobile =====
+   pasek nawigacji nie mieści się w jednym rzędzie -> dwa rzędy:
+   [brand | linki] / [wyszukiwarka na całą szerokość] */
+  @media (max-width: 768px) {
+    .navbar {
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      padding: 10px 16px;
+    }
+
+    .navbar__search {
+      order: 3;
+      flex: 1 1 100%;
+      max-width: none;
+      margin: 0;
+    }
+
+    .navbar__links {
+      margin-left: auto;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px 14px;
+    }
+
+    .navbar__links a {
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+
+    .navbar__links button {
+      padding: 0.4em 0.9em;
+      font-size: 0.74rem;
+    }
+
+    .page {
+      padding: 20px 16px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+    }
+
+    /* przycisk (np. "Recalculate profile") pod tytułem, na całą szerokość */
+    .page__header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .page__header > button {
+      align-self: flex-start;
+    }
+
+    .filters {
+      gap: 8px 12px;
+    }
+
+    .search-form {
+      max-width: none;
+    }
+
+    .wizard__options {
+      max-width: none;
+    }
+
+    .game-hero__img {
+      max-width: none;
+    }
+
+    .video-thumb,
+    .video-thumb img {
+      max-width: 120px;
+      width: 120px;
+    }
+
+    .auth-page {
+      margin: 40px auto;
+    }
+  }
 }
