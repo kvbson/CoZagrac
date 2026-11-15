@@ -5,7 +5,13 @@ import { AuthContext } from '../../context/AuthContext';
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useContext(AuthContext);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="center">
+        <p>Loading…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
