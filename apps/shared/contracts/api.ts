@@ -28,6 +28,22 @@ export const loginUserHttpSchema = z.object({
   }),
 });
 
+/**
+ * Registration additionally requires the privacy-policy consent (checkbox in
+ * the email form); `z.literal(true)` makes an unchecked box a 400 before
+ * touching the database. No consent column - an account cannot exist
+ * without consent, so created_at doubles as the consent timestamp.
+ */
+export const registerUserHttpSchema = z.object({
+  body: z.object({
+    email: z.email(),
+    password: z.string().min(MIN_PASSWORD_LENGTH),
+    acceptedPrivacyPolicy: z.literal(true),
+  }),
+});
+
+export type RegisterUserInput = z.infer<typeof registerUserHttpSchema>['body'];
+
 export type LoginUserInput = z.infer<typeof loginUserHttpSchema>['body'];
 
 /* =========================
@@ -112,9 +128,7 @@ export type CreateProviderInput = z.infer<typeof createProviderHttpSchema>['body
    RECOMMENDATIONS
 ========================= */
 
-export const queryBooleanSchema = z
-  .enum(['true', 'false'])
-  .transform((value) => value === 'true');
+export const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 /**
  * review_tier is a popularity tier from getReviewTier():

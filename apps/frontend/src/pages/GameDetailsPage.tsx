@@ -1,10 +1,12 @@
+import type { GameDetailsResponse } from '@cozagrac/shared/contracts/api';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import type { GameDetailsResponse } from '@cozagrac/shared/contracts/api';
-import { gameService } from '../services/gameService';
+import { RatingSlider } from '../components/ui/RatingSlider';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
+import { useRatings } from '../features/recommendations/useRatings';
 import { ReviewSection } from '../features/reviews/ReviewSection';
+import { gameService } from '../services/gameService';
 import { stripHtml } from '../utils/html';
 
 type Movie = GameDetailsResponse['movies'][number];
@@ -116,6 +118,8 @@ export function GameDetailsPage() {
   const appId = Number(appIdParam);
   const validId = Number.isInteger(appId) && appId > 0;
 
+  const { ratings, rate, ratingPending } = useRatings({ removeFromRecommendations: false });
+
   const gameQuery = useQuery({
     queryKey: ['game', appId],
     queryFn: () => gameService.getGame(appId),
@@ -211,7 +215,10 @@ export function GameDetailsPage() {
 
           {game.publishers.some((p) => p.name) && (
             <p className="muted">
-              {game.publishers.map((p) => p.name).filter(Boolean).join(', ')}
+              {game.publishers
+                .map((p) => p.name)
+                .filter(Boolean)
+                .join(', ')}
             </p>
           )}
 
@@ -226,6 +233,16 @@ export function GameDetailsPage() {
                 Official website
               </a>
             )}
+          </div>
+
+          <div className="game-hero__rating">
+            <p className="muted">Your rating (feeds your recommendations)</p>
+            <RatingSlider
+              rating={ratings.get(game.steamAppid)}
+              onRate={(value) => rate(game.steamAppid, value)}
+              label={game.name}
+              disabled={ratingPending}
+            />
           </div>
         </div>
       </div>

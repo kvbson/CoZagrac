@@ -1,5 +1,5 @@
-import { useSearchParams } from 'react-router-dom';
 import type { GameReviewsLanguage, GameReviewsSort } from '@cozagrac/shared/contracts/api';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { ReviewCard } from './ReviewCard';
 import { useGameReviews } from './useGameReviews';
@@ -52,13 +52,9 @@ export function ReviewSection({ steamAppid }: { steamAppid: number }) {
   const total = pages[0]?.userData?.total ?? 0;
 
   const firstPage = pages[0];
-  const isEmpty =
-    (firstPage && !firstPage.success && firstPage.status === 404) ||
-    (firstPage?.success && total === 0);
+  const isEmpty = firstPage?.success && total === 0;
   const loadError =
-    firstPage && !firstPage.success && firstPage.status !== 404
-      ? (firstPage.error?.message ?? 'Failed to load reviews')
-      : null;
+    firstPage && !firstPage.success ? (firstPage.error?.message ?? 'Failed to load reviews') : null;
 
   return (
     <section className="reviews">
@@ -96,8 +92,7 @@ export function ReviewSection({ steamAppid }: { steamAppid: number }) {
 
       {loadError && (
         <p className="error">
-          {loadError}{' '}
-          <Button onClick={() => void reviewsQuery.refetch()}>Try again</Button>
+          {loadError} <Button onClick={() => void reviewsQuery.refetch()}>Try again</Button>
         </p>
       )}
 

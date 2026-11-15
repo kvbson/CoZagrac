@@ -427,6 +427,15 @@ select {
   text-align: right;
 }
 
+.game-hero__rating {
+  margin-top: 10px;
+  max-width: 360px;
+}
+.game-hero__rating .muted {
+  margin: 0 0 2px;
+  font-size: 0.8rem;
+}
+
 /* ===== view toggle (grid / details) ===== */
 
 .view-toggle {
@@ -966,6 +975,21 @@ select {
 }
 
 /* ===== privacy page ===== */
+
+.auth-form__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+.auth-form__consent input {
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+.auth-form__consent a {
+  color: var(--accent);
+}
 
 .privacy {
   max-width: 760px;

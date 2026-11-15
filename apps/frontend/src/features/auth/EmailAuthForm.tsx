@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { userService } from '../../services/userService';
@@ -13,18 +13,25 @@ export function EmailAuthForm() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (mode === 'register' && !acceptedPrivacy) {
+      setError('Please accept the privacy policy first.');
+      return;
+    }
+
     setLoading(true);
 
     const res =
       mode === 'login'
         ? await userService.login({ email, password })
-        : await userService.register({ email, password });
+        : await userService.register({ email, password, acceptedPrivacyPolicy: true });
 
     if (!res.success) {
       setLoading(false);
@@ -62,6 +69,19 @@ export function EmailAuthForm() {
         required
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
       />
+
+      {mode === 'register' && (
+        <label className="auth-form__consent">
+          <input
+            type="checkbox"
+            checked={acceptedPrivacy}
+            onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+          />
+          <span>
+            I accept the <Link to="/privacy">privacy policy</Link> (what we store and why).
+          </span>
+        </label>
+      )}
 
       {error && <p className="error">{error}</p>}
 

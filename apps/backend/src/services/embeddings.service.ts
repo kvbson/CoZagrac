@@ -548,18 +548,31 @@ export const embeddingService = {
 
     /**
      * Recommend games for a user (kNN against game embeddings).
-     * - excludes games already owned (Steam library),
+     * - excludes games already owned (Steam library), favorites and rated,
      * - only active game-embedding version,
      * - cursor = similarity of the last returned item; next batch is below it.
      * Returns null when the user has no profile embedding yet.
+     *
+     * `embeddingOverride` (evaluation scripts): use the given vector as the
+     * profile INSTEAD of the stored one - and skip the rating correction
+     * (the caller owns the vector math; e.g. leave-one-out centroids).
      */
     async recommendForUser(
       userId: string,
       {
         limit = 20,
         cursor,
+        embeddingOverride,
+        excludeRated = true,
         ...filters
-      }: { limit?: number; cursor?: number } & RecommendationFilters = {},
+      }: {
+        limit?: number;
+        cursor?: number;
+        /** evaluation only: profile vector computed by the caller (skips the rating correction) */
+        embeddingOverride?: number[];
+        /** evaluation only: keep rated games among candidates (explicit-feedback protocol) */
+        excludeRated?: boolean;
+      } & RecommendationFilters = {},
     ) {
       const safeLimit = Math.min(limit, 50);
 
@@ -587,20 +600,27 @@ export const embeddingService = {
       // manual picks count as "already known" too - never recommend them back
       const favoriteIds = await favoritesService.getAppIds(userId);
 
-      // explicit feedback: rated games leave the candidate set and correct
-      // the centroid at query time (no profile rebuild, no OpenAI calls).
-      // Cursor caveat: the correction uses current ratings, so re-rating
-      // mid-pagination shifts the similarity scale the cursor refers to.
-      const rated = await ratingsService.getRatedEmbeddings(userId, ACTIVE_EMBEDDING_VERSION);
-      const ratedIds = rated.map((r) => r.steamAppid);
-
       let profileEmbedding = userEmb.embedding;
-      if (rated.length > 0) {
-        profileEmbedding = applyRatingCorrection(
-          userEmb.embedding,
-          rated.map((r) => ({ vec: r.embedding, rating: r.rating })),
-        );
-        logger.info('[RECOMMEND][FEEDBACK]', { userId, ratedGames: rated.length });
+      let ratedIds: number[] = [];
+
+      if (embeddingOverride) {
+        profileEmbedding = embeddingOverride;
+        if (excludeRated) ratedIds = await ratingsService.getRatedAppIds(userId);
+      } else {
+        // explicit feedback: rated games leave the candidate set and correct
+        // the centroid at query time (no profile rebuild, no OpenAI calls).
+        // Cursor caveat: the correction uses current ratings, so re-rating
+        // mid-pagination shifts the similarity scale the cursor refers to.
+        const rated = await ratingsService.getRatedEmbeddings(userId, ACTIVE_EMBEDDING_VERSION);
+        ratedIds = rated.map((r) => r.steamAppid);
+
+        if (rated.length > 0) {
+          profileEmbedding = applyRatingCorrection(
+            userEmb.embedding,
+            rated.map((r) => ({ vec: r.embedding, rating: r.rating })),
+          );
+          logger.info('[RECOMMEND][FEEDBACK]', { userId, ratedGames: rated.length });
+        }
       }
 
       const excludeIds = [...new Set([...ownedIds, ...favoriteIds, ...ratedIds])];

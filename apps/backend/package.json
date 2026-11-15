@@ -12,7 +12,10 @@
     "schema_gen": "npx drizzle-kit introspect --config ./src/drizzle.config.ts",
     "sql_gen": "npx drizzle-kit generate --config ./src/drizzle.config.ts",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:loo": "tsx src/functions/evaluation/evaluateLeaveOneOut.ts",
+    "eval:bench": "tsx src/functions/evaluation/benchmarkPerformance.ts",
+    "eval:cost": "tsx src/functions/evaluation/catalogCostReport.ts"
   },
   "keywords": [],
   "author": "",
