@@ -1,6 +1,7 @@
 import { desc, eq, and } from 'drizzle-orm';
 import { db } from '../db/init.js';
 import { userEmbeddings, userProviders, users } from '../drizzle/schema.js';
+import { usageService } from './usage.service.js';
 import { publicUserSchema } from '../schemas/user.zod.js';
 import {
   CreateProviderInput,
@@ -33,6 +34,9 @@ export const userService = {
   },
 
   async delete(id: string) {
+    // embedding_usage_daily has no FK (global sentinel row) - clean explicitly
+    await usageService.deleteUserRows(id);
+
     const [row] = await db
       .delete(users)
       .where(eq(users.id, id))

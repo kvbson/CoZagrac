@@ -16,9 +16,21 @@ const envSchema = z.object({
   STEAM_API_KEY: z.string().min(1),
   SESSION_SECRET: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
+  FRONTEND_URL: z.string().default('http://localhost:5137'),
+  DB_SSL: z.enum(['verify', 'no-verify', 'disable']).optional(),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
+  OPENAI_TOKENS_USER_DAY: z.coerce.number().int().positive().default(2_000_000),
+  OPENAI_TOKENS_GLOBAL_DAY: z.coerce.number().int().positive().default(10_000_000),
+  USER_PROFILE_BUILDS_PER_DAY: z.coerce.number().int().positive().default(4),
+  USAGE_RETENTION_DAYS: z.coerce.number().int().min(7).default(90),
 });
 
+// SINGLE SOURCE OF TRUTH for environment values. Modules must NOT read
+// process.env at evaluation time: ESM sibling-import order in index.ts is
+// controlled by the formatter, so dotenv here may run AFTER the first
+// process.env read (this caused DB_SSL/isDev to silently resolve to the
+// production defaults). Importing `env` from this file guarantees dotenv is
+// evaluated first, because an imported module always runs before the importer.
 export const env = (() => {
   const parsed = envSchema.safeParse(process.env);
 
@@ -26,6 +38,8 @@ export const env = (() => {
     console.error(z.treeifyError(parsed.error));
     throw new Error('Invalid environment variables');
   }
+
+  console.log('[ENV] validated keys:', Object.keys(parsed.data).join(', '));
 
   return parsed.data;
 })();

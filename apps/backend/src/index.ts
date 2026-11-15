@@ -1,16 +1,21 @@
-import './env.js';
-import './auth/steam.js';
+import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-import cors from 'cors';
-import mainRouter from './routes/index.js';
-import { pool } from './db/init.js';
-import { checkDbConnection } from './db/utils/healthCheck.js';
-import { pgSession } from './db/sessions/index.js';
 import passport from 'passport';
-import { domain, isDev, PORT } from './config/runtime.js';
+import './auth/steam.js';
+import { domain, frontendUrl, isDev, PORT } from './config/runtime.js';
+import { dbSslMode, pool, redactedDatabaseUrl } from './db/init.js';
+import { pgSession } from './db/sessions/index.js';
+import { checkDbConnection } from './db/utils/healthCheck.js';
+import { env } from './env.js';
+import { errorHandler } from './middlewares/errorHandler.js';
+import mainRouter from './routes/index.js';
+import { usageService } from './services/usage.service.js';
 
 const app = express();
+
+// nginx trust
+app.set('trust proxy', 1);
 
 // Server configuration
 app.use(express.json());
@@ -26,7 +31,7 @@ app.use(
 if (!isDev) {
   app.use(
     cors({
-      origin: [domain, 'http://localhost:5137'],
+      origin: [domain, frontendUrl],
       credentials: true,
     }),
   );
@@ -40,10 +45,14 @@ app.use(passport.session());
 // Routes
 app.use('/api', mainRouter);
 
+// Terminal error handler (must stay after all routes)
+app.use(errorHandler);
+
 // Start server
 async function startServer() {
-  console.log(`[ENV] NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`[ENV] NODE_ENV: ${env.NODE_ENV}`);
   console.log(`[ENV] PORT: ${PORT}`);
+  console.log(`[DB] SSL mode: ${dbSslMode} | target: ${redactedDatabaseUrl()}`);
   const server = isDev ? app.listen(PORT, onSuccess) : app.listen(PORT, '0.0.0.0', onSuccess);
 
   try {
@@ -53,6 +62,22 @@ async function startServer() {
     console.error('Database connection failed:', err);
     process.exit(1);
   }
+
+  // usage history retention (embedding_usage_daily): once at boot - so
+  // redeploys also clean - then every 24h; unref keeps the timer from
+  // holding the process open on its own
+  const cleanupUsageHistory = () => {
+    usageService
+      .cleanupOldRows()
+      .then((removed) => {
+        if (removed > 0) {
+          console.log(`[USAGE] removed ${removed} usage rows older than ${env.USAGE_RETENTION_DAYS} days`);
+        }
+      })
+      .catch((err: unknown) => console.error('[USAGE] cleanup failed:', err));
+  };
+  cleanupUsageHistory();
+  setInterval(cleanupUsageHistory, 24 * 60 * 60 * 1000).unref();
 
   // Set server timeouts
   server.timeout = 70000; // 70 seconds

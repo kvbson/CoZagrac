@@ -3,6 +3,7 @@ import {
   unique,
   uuid,
   integer,
+  smallint,
   varchar,
   foreignKey,
   timestamp,
@@ -11,10 +12,11 @@ import {
   jsonb,
   text,
   boolean,
+  check,
   primaryKey,
   doublePrecision,
   date,
-  pgView,
+  bigint,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -123,6 +125,89 @@ export const userEmbeddings = pgTable(
       foreignColumns: [users.id],
       name: 'user_embeddings_user_id_fkey',
     }).onDelete('cascade'),
+  ],
+);
+
+export const userFavoriteGames = pgTable(
+  'user_favorite_games',
+  {
+    userId: uuid('user_id').notNull(),
+    steamAppid: integer('steam_appid').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_user_favorite_games_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_favorite_games_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'user_favorite_games_steam_appid_fkey',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [table.userId, table.steamAppid],
+      name: 'user_favorite_games_pkey',
+    }),
+  ],
+);
+
+export const userGameRatings = pgTable(
+  'user_game_ratings',
+  {
+    userId: uuid('user_id').notNull(),
+    steamAppid: integer('steam_appid').notNull(),
+    rating: smallint('rating').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_user_game_ratings_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    check('user_game_ratings_rating_check', sql`${table.rating} BETWEEN 1 AND 5`),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_game_ratings_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'user_game_ratings_steam_appid_fkey',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [table.userId, table.steamAppid],
+      name: 'user_game_ratings_pkey',
+    }),
+  ],
+);
+
+export const embeddingUsageDaily = pgTable(
+  'embedding_usage_daily',
+  {
+    day: date().notNull(),
+    // GLOBAL_USAGE_USER_ID row aggregates all traffic; NO FK on purpose
+    // (the sentinel uuid is not a user; per-account rows are removed by
+    // userService.delete)
+    userId: uuid('user_id').notNull(),
+    tokens: bigint({ mode: 'number' }).default(0).notNull(),
+    profileBuilds: integer('profile_builds').default(0).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.day, table.userId], name: 'embedding_usage_daily_pkey' }),
   ],
 );
 
@@ -455,9 +540,4 @@ export const gameReviews = pgTable(
     primaryKey({ columns: [table.steamAppid, table.recommendationId], name: 'game_reviews_pkey' }),
   ],
 );
-export const genreNamesForGameView = pgView('genre_names_for_game_view', {
-  steamAppid: integer('steam_appid'),
-  genres: varchar(),
-}).as(
-  sql`SELECT steam_appid, ( SELECT array_agg(g.name ORDER BY g.name) AS array_agg FROM game_genres gg JOIN genres g ON g.id = gg.genre_id WHERE gg.steam_appid = gi.steam_appid) AS genres FROM game_info gi WHERE name::text = 'Shadow of the Tomb Raider: Definitive Edition'::text`,
-);
+
