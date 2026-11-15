@@ -193,6 +193,19 @@ CREATE TABLE user_favorite_games (
   PRIMARY KEY (user_id, steam_appid)
 );
 
+-- explicit 1-5 game ratings (see ratings.service.ts): recommendation cards
+-- and library entries write here; 4-5 pull the profile centroid toward the
+-- game (Rocchio-style correction), 1-2 push it away, 3 is neutral
+CREATE TABLE user_game_ratings (
+  user_id uuid NOT NULL,
+  steam_appid integer NOT NULL,
+  rating smallint NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, steam_appid),
+  CONSTRAINT user_game_ratings_rating_check CHECK (rating BETWEEN 1 AND 5)
+);
+
 -- daily OpenAI quota counters (see utils/usage.helpers.ts): one row per
 -- (UTC day, account) plus a global row with user_id =
 -- '00000000-0000-0000-0000-000000000000'. NO FK by design (the sentinel
@@ -272,6 +285,11 @@ ALTER TABLE user_favorite_games ADD CONSTRAINT user_favorite_games_user_id_fkey
 ALTER TABLE user_favorite_games ADD CONSTRAINT user_favorite_games_steam_appid_fkey
   FOREIGN KEY (steam_appid) REFERENCES game_info(steam_appid) ON DELETE CASCADE;
 
+ALTER TABLE user_game_ratings ADD CONSTRAINT user_game_ratings_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE user_game_ratings ADD CONSTRAINT user_game_ratings_steam_appid_fkey
+  FOREIGN KEY (steam_appid) REFERENCES game_info(steam_appid) ON DELETE CASCADE;
+
 ALTER TABLE user_genres ADD CONSTRAINT user_genres_user_id_fkey
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE user_genres ADD CONSTRAINT user_genres_genre_id_fkey
@@ -322,6 +340,7 @@ CREATE INDEX idx_user_embeddings_version ON user_embeddings (embedding_version);
 
 -- user_id side is covered by the PK prefix (user_id, steam_appid)
 CREATE INDEX idx_user_favorite_games_steam_appid ON user_favorite_games (steam_appid);
+CREATE INDEX idx_user_game_ratings_steam_appid ON user_game_ratings (steam_appid);
 
 CREATE INDEX idx_user_genres_user_id ON user_genres (user_id);
 CREATE INDEX idx_user_categories_user_id ON user_categories (user_id);

@@ -3,6 +3,7 @@ import {
   unique,
   uuid,
   integer,
+  smallint,
   varchar,
   foreignKey,
   timestamp,
@@ -11,11 +12,13 @@ import {
   jsonb,
   text,
   boolean,
+  check,
   primaryKey,
   doublePrecision,
   date,
   bigint,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const genres = pgTable(
   'genres',
@@ -152,6 +155,42 @@ export const userFavoriteGames = pgTable(
     primaryKey({
       columns: [table.userId, table.steamAppid],
       name: 'user_favorite_games_pkey',
+    }),
+  ],
+);
+
+export const userGameRatings = pgTable(
+  'user_game_ratings',
+  {
+    userId: uuid('user_id').notNull(),
+    steamAppid: integer('steam_appid').notNull(),
+    rating: smallint('rating').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_user_game_ratings_steam_appid').using(
+      'btree',
+      table.steamAppid.asc().nullsLast().op('int4_ops'),
+    ),
+    check('user_game_ratings_rating_check', sql`${table.rating} BETWEEN 1 AND 5`),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_game_ratings_user_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.steamAppid],
+      foreignColumns: [gameInfo.steamAppid],
+      name: 'user_game_ratings_steam_appid_fkey',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [table.userId, table.steamAppid],
+      name: 'user_game_ratings_pkey',
     }),
   ],
 );

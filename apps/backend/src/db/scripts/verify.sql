@@ -1,7 +1,8 @@
 -- Read-only checklist: does this database match what the app expects?
--- Expected state (dev DB catalog dump, October 2026 + bootstrap_schema.sql):
---   2 extensions, 20 tables, 1 non-extension function, 1 user trigger,
---   vector type from the extension, 24 custom indexes (2 HNSW + 1 GIN),
+-- Expected state (dev DB catalog dump, October 2026 + bootstrap_schema.sql
+-- + migration_user_favorite_games.sql + migration_user_game_ratings.sql):
+--   2 extensions, 21 tables, 1 non-extension function, 1 user trigger,
+--   vector type from the extension, 26 custom indexes (2 HNSW + 1 GIN),
 --   0 sequences, users_email_key UNIQUE, sessions(sid/sess/expire),
 --   genre_names_for_game_view gone, DML grants for app_user on all tables.
 --
@@ -12,7 +13,7 @@ SELECT extname, extversion FROM pg_extension
 WHERE extname IN ('pgcrypto', 'vector')
 ORDER BY extname;
 
-SELECT '=== 2. tables: expect count = 20 ===' AS check;
+SELECT '=== 2. tables: expect count = 21 ===' AS check;
 SELECT count(*) AS tables
 FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
@@ -55,7 +56,7 @@ JOIN pg_extension e ON e.oid = d.refobjid
 WHERE t.typname NOT LIKE '\_%'
 ORDER BY 1, 2;
 
-SELECT '=== 7. custom indexes: expect count = 25 ===' AS check;
+SELECT '=== 7. custom indexes: expect count = 26 ===' AS check;
 SELECT count(*) AS custom_indexes
 FROM pg_indexes
 WHERE schemaname = 'public' AND indexname LIKE 'idx\_%';

@@ -211,6 +211,43 @@ export type UserFavoritesResponse = {
   items: UserFavoriteGame[];
 };
 
+/* =========================
+   GAME RATINGS (explicit feedback)
+   A 1-5 rating on a single game, written from recommendation cards and
+   library entries. 4-5 pull the profile centroid toward the game
+   (Rocchio-style correction), 1-2 push it away, 3 is neutral. Rated games
+   leave the recommendation candidate set (the user already expressed an
+   opinion about them).
+========================= */
+
+export const putUserRatingHttpSchema = z.object({
+  body: z.object({
+    steamAppid: z.number().int().positive(),
+    rating: z.number().int().min(1).max(5),
+  }),
+});
+
+export type PutUserRatingBody = z.infer<typeof putUserRatingHttpSchema>['body'];
+
+export const deleteUserRatingHttpSchema = z.object({
+  params: z.object({
+    steamAppid: z.coerce.number().int().positive(),
+  }),
+});
+
+export type DeleteUserRatingParams = z.infer<typeof deleteUserRatingHttpSchema>['params'];
+
+export type UserRating = {
+  steamAppid: number;
+  rating: number;
+  name: string;
+  headerImage: string | null;
+};
+
+export type UserRatingsResponse = {
+  items: UserRating[];
+};
+
 /**
  * POST /user/me/embedding is asynchronous now: it starts a job and returns
  * 202 with status 'running'; poll GET /user/me/embedding/status until
