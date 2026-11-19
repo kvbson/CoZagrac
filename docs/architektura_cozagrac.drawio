@@ -1,0 +1,70 @@
+<mxfile host="app.diagrams.net" agent="opencode">
+  <diagram id="cozagrac-arch" name="Architektura CoZagrac">
+    <mxGraphModel dx="1405" dy="904" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="F" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FA;strokeColor=#66C0F4;fontSize=14;fontColor=#1B2838;" value="&lt;b&gt;Frontend&lt;/b&gt;&lt;br&gt;React 19 SPA" vertex="1">
+          <mxGeometry height="80" width="220" x="60" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="N" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1B2838;strokeColor=#1B2838;fontSize=14;fontColor=#FFFFFF;" value="&lt;b&gt;nginx&lt;/b&gt;&lt;br&gt;edge / TLS" vertex="1">
+          <mxGeometry height="80" width="200" x="360" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="B" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FA;strokeColor=#66C0F4;fontSize=14;fontColor=#1B2838;" value="&lt;b&gt;Backend&lt;/b&gt;&lt;br&gt;Express 5 + Zod&lt;br&gt;routes → controllers → services" vertex="1">
+          <mxGeometry height="80" width="240" x="640" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="SH" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3EFFA;strokeColor=#7B61C4;fontSize=13;fontColor=#1B2838;" value="&lt;b&gt;@cozagrac/shared&lt;/b&gt;&lt;br&gt;kontrakty Zod" vertex="1">
+          <mxGeometry height="70" width="220" x="60" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="DB" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E8B57;fontSize=14;fontColor=#1B2838;" value="&lt;b&gt;PostgreSQL + pgvector&lt;/b&gt;&lt;br&gt;sesje • katalog • embeddingi • oceny" vertex="1">
+          <mxGeometry height="80" width="240" x="640" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="E1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B03A2A;fontSize=13;fontColor=#1B2838;" value="&lt;b&gt;Steam Web API&lt;/b&gt;&lt;br&gt;biblioteka • katalog" vertex="1">
+          <mxGeometry height="70" width="240" x="640" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="E2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B03A2A;fontSize=13;fontColor=#1B2838;" value="&lt;b&gt;OpenAI&lt;/b&gt;&lt;br&gt;Embeddings API" vertex="1">
+          <mxGeometry height="70" width="240" x="640" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="F" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#5A6B7B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="B" value="/api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="B" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#5A6B7B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="DB" value="SQL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="B" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=12;fontColor=#5A6B7B;exitX=0.25;exitY=1;entryX=0;entryY=0.5;" target="E1" value="HTTPS">
+          <mxGeometry relative="1" x="0.2824" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="700" y="330" />
+              <mxPoint x="540" y="330" />
+              <mxPoint x="540" y="595" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="B" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" target="E2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="160" />
+              <mxPoint x="960" y="715" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="SH" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="F">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="SH" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;fontSize=12;fontColor=#5A6B7B;exitX=1;exitY=0.5;entryX=0.25;entryY=1;" target="B" value="import typów">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="305" />
+              <mxPoint x="340" y="250" />
+              <mxPoint x="700" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
