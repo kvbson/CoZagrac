@@ -1,7 +1,7 @@
 # CoZagrac — prezentacja MVP (konspekt slajd po slajdzie)
 
-Format: 16 slajdów, ~15–20 min. Każdy slajd zawiera: tytuł, bullety (do wklejenia),
-notatkę prelegenta (co mówić) i opis grafiki (co narysować/wstawić).
+Format: **13 slajdów + 1 rezerwowy, ~10–12 min**. Każdy slajd zawiera: tytuł, bullety
+(do wklejenia), notatkę prelegenta (co mówić) i opis grafiki (co narysować/wstawić).
 
 **Do uzupełnienia przed prezentacją (placeholdery oznaczone `[UZUPEŁNIJ]`):**
 - 4 zrzuty ekranu z działającej aplikacji (lista przy slajdzie 7),
@@ -29,11 +29,11 @@ tego, co kupili inni — tylko na podstawie profilu Waszych własnych zwyczajów
 **Treść na slajdzie:**
 - Steam: ponad 100 000 gier — paradoks wyboru
 - Filtry (gatunek, cena) nie mówią, czy gra **Tobie** się spodoba
-- Lista życzeń rośnie, wieczór ucieka — „milion gier i nic w co zagrać"
 - Algorytmy sklepu sugerują to, co **kupić** — nie to, w co **zagrasz**
 
-**Notatka (60 s):** Rozwinąć frustrację gracza: sklep monetyzuje sprzedaż, nie trafność.
-Znajomi polecają losowo. Reddit/YouTube to szum. Brakuje narzędzia, które zna *Ciebie*.
+**Notatka (45 s):** Rozwinąć frustrację gracza: „milion gier i nic w co zagrać". Sklep monetyzuje
+sprzedaż, nie trafność. Znajomi polecają losowo, Reddit/YouTube to szum. Brakuje narzędzia,
+które zna *Ciebie*.
 
 **Grafika:** zrzut ekranu przeglądarki Steam z setkami kafelków (symbol nadmiaru).
 
@@ -56,23 +56,18 @@ i bez ankiety „co lubisz" — wystarczy biblioteka Steam i model językowy.
 
 ## Slajd 4 — Co dokładnie czytamy z profilu użytkownika
 
-**Treść na slajdzie (aktualny zakres MVP):**
+**Treść na slajdzie:**
 - **Biblioteka Steam** — pełna lista posiadanych gier (publiczna, przez Steam Web API)
 - **Godziny spędzone w każdej grze** (playtime) — najmocniejszy sygnał: nie „kupiłem", a „grałem"
 - **Top 50 gier wg godzin** — rdzeń profilu; 50. gra z 8 h waży tyle, co pierwsza
-- **Charakter tych gier** — ich gatunki, cechy (singleplayer, co-op, early access…) i sentyment
-  recenzji — zakodowane wektorowo w embeddingach gier
+- **Charakter tych gier** — gatunki, cechy i sentyment recenzji, zakodowane wektorowo
 - **Zbiór wykluczeń** — wszystko co już masz, nigdy nie trafi do rekomendacji
+- Klient Steam API ma już gotowe endpointy na kolejne sygnały (aktywność 2 tyg., osiągnięcia)
 
-**Treść na slajdzie (aspekty przygotowane do wykorzystania — API już zaimplementowane):**
-- aktywność z ostatnich 2 tygodni (tempo grania), odblokowane osiągnięcia, profil publiczny
-  (nick, avatar, kraj), w przyszłości: wishlist i aktywność znajomych
-
-**Notatka (90 s):** To kluczowy slajd produktu: wyjaśnić, że profil to NIE ankieta i NIE historia
-zakupów, tylko twarde dane o zachowaniu. Godziny = dowód zainteresowania; recenzje gier, w które
-gramy, uczą model czym jest „nasz typ gry". Wspomnieć, że klient Steam API ma już gotowe endpointy
-(ostatnie 2 tygodnie, osiągnięcia) — rozbudowa profilu to kwestia podłączenia, nie budowy od zera.
-Świadoma decyzja MVP: biblioteka musi być **publiczna** — to jedyny warunek wejścia.
+**Notatka (60 s):** To kluczowy slajd produktu: profil to NIE ankieta i NIE historia zakupów,
+tylko twarde dane o zachowaniu. Godziny = dowód zainteresowania; recenzje gier, w które gramy,
+uczą model czym jest „nasz typ gry". Rozbudowa profilu to podłączenie gotowych endpointów,
+nie budowa od zera. Świadoma decyzja MVP: biblioteka musi być **publiczna** — jedyny warunek wejścia.
 
 **Grafika:** „karta profilu" — po lewej awatar i lista gier z paskami godzin, strzałki do
 słupków: Gatunki / Tryby / Sentyment recenzji → zbita w jeden „odcisk gustu" (heksagon/radar).
@@ -82,8 +77,7 @@ słupków: Gatunki / Tryby / Sentyment recenzji → zbita w jeden „odcisk gust
 ## Slajd 5 — Czym to się różni od „kupiły to też osoby…"
 
 **Treść na slajdzie:**
-- Rekomendacje **treściowe** (content-based), nie zakupowe — rekomendujemy to, czego NIE MA
-  w koszyku innych
+- Rekomendacje **treściowe** (content-based), nie zakupowe
 - Gramy na embeddingach: opis + cechy + recenzje **pozytywne i negatywne** (negatywne z wagą
   ujemną — uczymy się też, co odstrasza)
 - Profil liczony z **gustu**, nie z portfela — darmowe grille i tanie indie nie zniekształcają wyniku
@@ -143,7 +137,7 @@ Jeśli demo na żywo ryzykowne (katalog/konta), nagrać 90-sekundowy ekran wcze�
 
 **Notatka (60 s):** Jedno zdanie o przestrzeni wektorowej: „gry o podobnym charakterze leżą
 obok siebie — niezależnie od gatunku czy ceny". Nie wchodzić w HNSW/cosine na tym slajdzie;
-jeśli padnie pytanie techniczne — slajd rezerwowy 16.
+jeśli padnie pytanie techniczne — slajd rezerwowy.
 
 **Grafika:** mapa 2D kropek (gry), gwiazdka = Twój profil, okrąg najbliższych sąsiadów,
  jedna przekreślona kropka = „już posiadasz".
@@ -154,13 +148,12 @@ jeśli padnie pytanie techniczne — slajd rezerwowy 16.
 
 **Treść na slajdzie:**
 - Oficjalne **Steam Web API + Store API** (legalnie: publiczne dane, zgoda użytkownika przy loginie)
-- Pipeline synchronizacji katalogu: szczegółowe dane → recenzje → embeddingi (odpornie na błędy, retry)
-- Filtr jakości katalogu: rekomendujemy tylko gry **dobrze udokumentowane recenzjami**
-  (progi jakości S/A/B, min. ~1000 recenzji)
-- Katalog: **[UZUPEŁNIJ: N gier] zsynchronizowanych, [N] z gotowym embeddingiem**
+- Pipeline synchronizacji: szczegóły → recenzje → embeddingi (odporny na błędy, retry)
+- Filtr jakości: rekomendujemy tylko gry dobrze udokumentowane recenzjami
+  (progi S/A/B, min. ~1000 recenzji) — katalog: **[UZUPEŁNIJ: N] gier, [N] embeddingów**
 
-**Notatka (45 s):** Uzasadnić progi: gra z 20 recenzjami to za mało sygnału, by ją rekomendować —
-jakość poleceń bije ilość (Quality over Quantity). Embeddingi liczone raz per gra → koszt kontrolowany.
+**Notatka (45 s):** Uzasadnić progi: gra z 20 recenzjami to za mało sygnału — jakość poleceń
+bije ilość (Quality over Quantity). Embeddingi liczone raz per gra → koszt kontrolowany.
 
 **Grafika:** lejek: cała para Steam → kandydaci z recenzjami → embeddingi → dostępni do rekomendacji.
 
@@ -175,123 +168,91 @@ jakość poleceń bije ilość (Quality over Quantity). Embeddingi liczone raz p
 - Integracje: Steam (OpenID + Web API), OpenAI Embeddings
 
 **Notatka (30 s):** Jeden argument jakości: zmiana kontraktu wywala kompilację na froncie —
-typy trzymane centralnie eliminują klasę błędów „API zwróco coś innego niż się spodziewaliśmy".
+typy trzymane centralnie eliminują klasę błędów „API zwróciło coś innego niż się spodziewaliśmy".
 
 **Grafika:** 3 klocki (frontend / backend / shared-typ) + strzałki do PG i światów zewnętrznych
 (Steam, OpenAI).
 
 ---
 
-## Slajd 11 — Bez czego aplikacja NIE obejdzie się (rdzeń)
+## Slajd 11 — Zakres MVP: rdzeń vs świadome cięcia
 
-**Treść na slajdzie:**
+**Treść na slajdzie (dwie kolumny):**
+
+*Bez tego aplikacja się nie obejdzie (rdzeń):*
 - **Publiczna biblioteka Steam + klucz Steam API** — bez danych o zwyczajach nie ma profilu
-- **Model embeddingów** (OpenAI) — bez niego zostają tylko tagi = wracamy do filtrów ze slajdu 2
-- **Baza wektorowa (PostgreSQL + pgvector)** — bez indeksu HNSW nie wyskalujemy ponad tysiące gier
-- **Zsynchronizowany katalog gier z recenzjami** — pusty katalog = brak czego rekomendować
+- **Model embeddingów (OpenAI)** — bez niego zostają tylko tagi = wracamy do filtrów ze slajdu 2
+- **PostgreSQL + pgvector** — bez indeksu HNSW nie wyskalujemy ponad tysiące gier
+- **Zsynchronizowany katalog z recenzjami** — pusty katalog = brak czego rekomendować
 - **Logowanie/sesja** — profil musi mieć właściciela
 
-**Notatka (60 s):** To mapa zależności produktu: każda z tych pozycji to punkt awarii CAŁEJ
-pętli wartości. Celowo nie ma tu recenzji „jako funkcji" ani cen — patrz slajd 12.
-
-**Grafika:** schemat łańcucha zębatego — 5 kół, przy każdym „brak = ✗"; brak koła łańcuch stoi.
-
----
-
-## Slajd 12 — Bez czego aplikacja się OBEJDZIE (świadomie poza MVP)
-
-**Treść na slajdzie:**
-- Logowanie e-mail/hasło — Steam wchodzi i tak z MVP
-- Ceny, promocje, „darmowe" — dekoracja karty, nie sygnał dopasowania
+*Świadomie poza MVP:*
+- Ceny, promocje, filtry, widok biblioteki — dekoracja karty / plan P2, nie sygnał dopasowania
 - Panel recenzji i „Similar games" — wartość dodana po kliknięciu, rdzeń działa bez nich
-- Filtry (cena, platforma, rok), widok biblioteki, ustawienia konta — plan P2
-- Motyw jasny/ciemny, polish wizualny
-- **Dodatkowe media inne niż gry** — trailery/filmy, streamy, nagrania, biblioteki multimediów:
-  gra jest nośnikiem profilu, medium wideo nie dokłada dziś dowodu na „zagram w to"
-- **Inne środowiska (platformy) użytkownika** — Epic Games Store, GOG, Xbox/PC Game Pass,
-  Discord, Battle.net: MVP opiera się na jednym źródle zachowania (Steam), reszta nie jest
-  potrzebna do działania pętli
+- **Dodatkowe media** (trailery, streamy) i **inne platformy** (Epic, GOG, Game Pass) —
+  MVP opiera się na jednym źródle zachowania (Steam)
 
-**Notatka (60 s):** Filozofia cięcia zakresu: jeśli element nie karmi rdzeniowej pętli
-(profil → dopasowanie → klik), w MVP go nie ma — ale nie znaczy, że go nie będzie:
-media i inne platformy to zaplanowana przyszłość (slajd 14), bo łączą się z tym samym
-modelem profilu: graj = sygnał.
+**Notatka (60 s):** Lewa kolumna to mapa zależności: każda pozycja to punkt awarii CAŁEJ pętli
+wartości. Prawa to filozofia cięcia: jeśli element nie karmi rdzeniowej pętli (profil →
+dopasowanie → klik), w MVP go nie ma — ale nie znaczy, że go nie będzie: media i platformy
+łączą się z tym samym modelem profilu (graj = sygnał) i mają gotową ścieżkę rozwoju (slajd 12).
 
-**Grafika:** walizka „MVP" z wypchanym rdzeniem; obok wieszak z odrzuconymi elementami
-w dwóch grupach: „funkcje P2" i „media + inne środowiska".
+**Grafika:** po lewej łańcuch zębaty (5 kół, „brak = ✗"), po prawej walizka „MVP" z rdzeniem
+i wieszak z odrzuconymi elementami w dwóch grupach.
 
 ---
 
-## Slajd 13 — Świadome ograniczenia i ryzyka
+## Slajd 12 — Świadome ograniczenia i plan rozwoju
 
 **Treść na slajdzie:**
-- Profil liczony **synchronicznie** — przy dużej bibliotece request czeka (limit serwera 70 s)
-  → w planie: kolejka z statusem „liczymy Twój profil…"
-- Prywatna biblioteka Steam = **brak profilu** → komunikat + zachęta do publicznego (lub ankieta-startowa)
-- Zimny start katalogu — nowe gry czekają na pełną synchronizację → harmonogram odświeżania
-- Kursor paginacji oparty o podobieństwo — powtórki na granicy (zabezpieczone po stronie klienta)
-- Zmienność odpowiedzi modelu — wersjonowanie embeddingów umożliwia przeliczenie bez mieszania wersji
 
-**Notatka (45 s):** Każdy punkt pokazać jako „znane, policzone, ma Ownera w roadmapie" —
-wiarygodność produktu, nie ukrywanie problemów.
+*Ograniczenia (znane, policzone, z planem):*
+- Profil liczony **synchronicznie** — przy dużej bibliotece request czeka (limit 70 s)
+  → w planie: kolejka ze statusem „liczymy Twój profil…"
+- Prywatna biblioteka Steam = brak profilu → komunikat + zachęta do upublicznienia
+- Zimny start katalogu — nowe gry czekają na synchronizację → harmonogram odświeżania
+- Kursor paginacji i zmienność modelu — zabezpieczone wersjonowaniem embeddingów
 
-**Grafika:** tabela ryzyko → prawdopodobieństwo/impakt → mitiga w roadmapie (3 kolumny).
+*Plan rozwoju:*
+- **P2:** filtry rekomendacji, widok biblioteki, asynchroniczny profil, recenzje/similar w API
+- **Średni termin:** pętla sprzężenia (👍/👎 → dopalenie profilu), uzasadnienie rekomendacji,
+  metryki trafności (precision@k), CI/CD + testy E2E
+- **Długi termin:** Epic/GOG/Game Pass jako kolejne sygnały, media w embeddingach, hybryda
+  z filtrem kolaboratywnym
+
+**Notatka (60 s):** Każde ograniczenie pokazać jako „wiemy, mamy ownera w roadmapie" —
+wiarygodność produktu, nie ukrywanie problemów. Plan: architektura nie blokuje rozwoju —
+dodatkowe źródła zachowania doklejają się do profilu jako kolejne sygnały czasu gry.
+
+**Grafika:** u góry tabela ryzyko → mitigacja (2 kolumny), u dołu droga na 3 stacje
+(P2 → sprzężenie/produkcja → multi-platform hybrid).
 
 ---
 
-## Slajd 14 — Co dorobimy — plan rozwoju
+## Slajd 13 — Jak zmierzymy sukces + podsumowanie
 
 **Treść na slajdzie:**
-- **Krótki termin (P2):** filtry rekomendacji (cena, platforma, rok), widok biblioteki,
-  asynchroniczny profil, recenzje i gry podobne jako standard API
-- **Średni termin:** pętla sprzężenia zwrotnego (👍/👎 na karcie → dopalenie profilu),
-  uzasadnienie rekomendacji („bo grałeś 120 h w X i lubisz Y"), metryki trafności (precision@k),
-  powiadomienia (nowe gry pasujące do profilu), wdrożenie CI/CD + testy E2E
-- **Długi termin / nowe środowiska:** rozszerzenie profilu o **Epic, GOG, Game Pass, Discord**
-  (to samo pojęcie „sygnału czasu"), media (trailery jako treściwe opisy gier), hybryda z filtrem
-  kolaboratywnym („gracze o profilu jak Twój"), własny/open-source model embeddingów, mobilny
 
-**Notatka (60 s):** Pokazać, że architektura nie blokuje rozwoju: dodatkowe źródła zachowania
-doklejają się do profilu jako kolejne sygnały czasu gry; to samo dotyczy mediów — trailery wzbogacają
-odcisk gry, nie nowy system.
-
-**Grafika:** droga/tory na 3 stacje (P2 → sprzężenie/produkcja → multi-platform hybrid).
-
----
-
-## Slajd 15 — Jak zmierzymy, że MVP działa
-
-**Treść na slajdzie:**
-- **CTR kart** — % wejść w kartę gry z tablicy rekomendacji (cel MVP: > 15%)
-- **Kliknięcia „View on Steam"** — realna intencja zakupu/instalacji
-- **Głębokość sesji** — ile „Load more" robi użytkownik przed opuszczeniem
+*Metryki MVP:*
+- **CTR kart** — % wejść w kartę z tablicy (cel: > 15%)
+- **Kliknięcia „View on Steam"** — realna intencja zagrania
 - **Powrót w 7 dni** — profil ma wartość tylko jeśli się wraca
-- Trafność off-line: precision@50 na trzymanej części biblioteki (do części badawczej pracy)
+- **Precision@50 offline** — na trzymanej części biblioteki (część badawcza pracy)
 
-**Notatka (45 s):** Metryki do wdrożenia wraz z analityką — MVP dostarcza zdarzenia,
-które je liczą (wyświetlenie karty, klik, wejście na Steam). Celowo nie ma jeszcze liczby aktywnych
-użytkowników — to faza po udostępnieniu.
-
-**Grafika:** tablica wskaźników (4 kafle wskaźników ze strzałkami w górę).
-
----
-
-## Slajd 16 — Podsumowanie
-
-**Treść na slajdzie:**
+*Podsumowanie:*
 - Działające **MVP end-to-end**: Steam login → profil → rekomendacje → karta gry → recenzje
-- 5 twardych zależności, które definiują produkt (slajd 11)
-- Zakres świadomie docięty: media i inne platformy poza MVP, ale z gotową ścieżką rozwoju
-- Kolejne 3 ruchy: filtry, asynchroniczny profil, pętla 👍/👎 + analityka
+- 5 twardych zależności definiujących produkt; zakres świadomie docięty z gotową ścieżką rozwoju
+- **Nie budujemy kolejnej przeglądarki Steam — budujemy profil gracza i na nim skalujemy produkt**
 
-**Notatka (30 s):** Domknąć tezą: „nie budujemy kolejnej przeglądarki Steam — budujemy profil
-gracza i na nim skalujemy produkt". Dziękuję, pytania.
+**Notatka (45 s):** Metryki do wdrożenia wraz z analityką — MVP dostarcza zdarzenia, które je
+liczą (wyświetlenie karty, klik, wejście na Steam). Domknąć tezą i podziękować; pytania.
 
-**Grafika:** powtórzenie pętli wartości z slajdu 3 + kod QR do repo/demo.
+**Grafika:** 4 kafle wskaźników u góry; u dołu powtórzenie pętli wartości ze slajdu 3
++ kod QR do repo/demo.
 
 ---
 
-## Slajd 17 (rezerwowy — na pytania techniczne)
+## Slajd 14 (rezerwowy — na pytania techniczne)
 
 - Embeddingi: model OpenAI 1536-wym., normalizacja L2; wagi: opis 0.4–0.5, taksonomia 0.15,
 recenzje +0.7 reszty / −0.05·pokrycie (negatywne), profil = centroid top-50 (bez wag),
@@ -304,5 +265,6 @@ kNN `1 − cosine`, indeks HNSW (cosine), wersjonowanie embeddingów `v1`/`v2-ce
 
 - Fonty duże (min. 24 pt), 1 myśl na slajd; bullety powyżej — skracać do słów-kluczy, resztę mówić z notatek.
 - Zrzuty robić w trybie ciemnym aplikacji (spójne tło), przeglądarka w oknie 1280×800 bez zakładek.
-- Na slajdzie 8 i 4 grafiki można wygenerować w PowerPoint (SmartArt) — kształty opisane w notatkach.
+- Slajd 11 zrób jako dwie kolumny (rdzeń | cięcia), slajd 12 jako dwie sekcje (ryzyka | roadmapa) —
+  czytelniejsze niż osobne slajdy.
 - Jeśli demo na żywo: mieć otwarte drugie konto z już zbudowanym profilem jako plan B.
