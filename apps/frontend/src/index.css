@@ -609,6 +609,15 @@ select {
   text-align: left;
 }
 
+.field-hint--error {
+  color: #ff8a94;
+}
+
+.req {
+  color: #ff8a94;
+  margin-right: 2px;
+}
+
 .muted {
   color: var(--muted);
 }

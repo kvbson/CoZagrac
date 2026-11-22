@@ -80,7 +80,7 @@ export function EmailAuthForm() {
       />
 
       {mode === 'register' && password !== '' && !passwordOk && (
-        <p className="field-hint" role="status">
+        <p className="field-hint field-hint--error" role="status">
           Password must be at least 6 characters.
         </p>
       )}
@@ -93,7 +93,8 @@ export function EmailAuthForm() {
             onChange={(e) => setAcceptedPrivacy(e.target.checked)}
           />
           <span>
-            I accept the <Link to="/privacy">privacy policy</Link> (what we store and why).
+            <span className="req">*</span> I accept the{' '}
+            <Link to="/privacy">privacy policy</Link> (what we store and why).
           </span>
         </label>
       )}
