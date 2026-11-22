@@ -1,5 +1,7 @@
 import type {
+  GameTaxonomyResponse,
   ProfileSource,
+  RecommendationExplainResponse,
   RecommendationFilters,
   UserEmbeddingStatusResponse,
   UserRecommendationsResponse,
@@ -32,11 +34,27 @@ export const recommendationService = {
     if (filters.platform !== undefined) {
       params.set('platform', filters.platform);
     }
+    if (filters.genres?.length) {
+      params.set('genres', filters.genres.join(','));
+    }
 
     return fetchApi<UserRecommendationsResponse>(`/api/user/me/recommendations?${params.toString()}`, {
       method: 'GET',
     });
   },
+
+  /**
+   * Why these recommendations: profile basis games with their weights and
+   * the explicit-rating feedback state. Loaded on demand (panel open).
+   */
+  getExplain: async (): Promise<ServiceResponse<RecommendationExplainResponse>> =>
+    fetchApi<RecommendationExplainResponse>('/api/user/me/recommendations/explain', {
+      method: 'GET',
+    }),
+
+  /** genre facets with game counts - options for the genre filter */
+  getTaxonomy: async (): Promise<ServiceResponse<GameTaxonomyResponse>> =>
+    fetchApi<GameTaxonomyResponse>('/api/game/taxonomy', { method: 'GET' }),
 
   /**
    * Starts (re)building the profile embedding from the chosen basis -

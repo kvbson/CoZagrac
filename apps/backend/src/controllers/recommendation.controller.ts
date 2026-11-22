@@ -39,6 +39,32 @@ export const getUserRecommendations = async (req: Request, res: Response) => {
 };
 
 /* =========================
+   GET RECOMMENDATIONS EXPLAIN
+   Why these recommendations: profile basis + rating feedback state.
+========================= */
+
+export const getRecommendationExplain = async (req: Request, res: Response) => {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return res.sendStatus(401);
+  }
+
+  const result = await embeddingService.user.explainForUser(userId);
+
+  if (!result) {
+    return res.status(200).json({
+      source: 'manual-games',
+      createdAt: new Date().toISOString(),
+      gamesUsed: 0,
+      basisGames: [],
+      ratedGames: [],
+    });
+  }
+
+  return res.status(200).json(result);
+};
+
+/* =========================
    REGENERATE USER EMBEDDING (async job)
    Building the profile is slow (Steam API + OpenAI + centroid), which used
    to hit server.timeout on big libraries. POST starts the job and answers

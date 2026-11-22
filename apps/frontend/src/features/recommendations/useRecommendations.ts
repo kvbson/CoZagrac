@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -61,6 +62,10 @@ export function useRecommendations(filters: RecommendationFilters) {
       if (!lastPage.success || !lastPage.userData) return undefined;
       return lastPage.userData.nextCursor ?? undefined;
     },
+    // keep the previous list visible while a filter change refetches -
+    // prevents the whole page flashing into the loading state (which also
+    // remounts the filter bar and closed the genre combo)
+    placeholderData: keepPreviousData,
   });
 
   const statusQuery = useQuery({

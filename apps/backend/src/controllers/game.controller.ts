@@ -33,3 +33,9 @@ export const getSimilarGames = async (req: Request, res: Response) => {
 
   return res.status(200).json({ items });
 };
+
+export const getGameTaxonomy = async (req: Request, res: Response) => {
+  const items = await embeddingService.game.getGenreFacets();
+
+  return res.status(200).json({ items });
+};

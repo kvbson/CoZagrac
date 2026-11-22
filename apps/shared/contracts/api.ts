@@ -146,6 +146,18 @@ export const getUserRecommendationsHttpSchema = z.object({
     minReviewTier: reviewTierSchema.optional(),
     yearFrom: z.coerce.number().int().min(1990).max(2100).optional(),
     platform: z.enum(['windows', 'mac', 'linux']).optional(),
+    /** comma-separated genre names (OR within genres, AND with other filters) */
+    genres: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .optional()
+      .transform((value) =>
+        value
+          ? [...new Set(value.split(',').map((g) => g.trim()).filter(Boolean))].slice(0, 10)
+          : undefined,
+      ),
   }),
 });
 
@@ -158,6 +170,7 @@ export type RecommendationFilters = {
   minReviewTier?: z.infer<typeof reviewTierSchema>;
   yearFrom?: number;
   platform?: 'windows' | 'mac' | 'linux';
+  genres?: string[];
 };
 
 export const recommendationItemSchema = z.object({
@@ -169,6 +182,8 @@ export const recommendationItemSchema = z.object({
   priceFinalFormatted: z.string().nullable(),
   priceDiscountPercent: z.number().nullable(),
   reviewTier: z.string().nullable(),
+  /** top genres of the game (from taxonomy), up to 3 */
+  genres: z.array(z.string()),
 });
 
 export type RecommendationItem = z.infer<typeof recommendationItemSchema>;
@@ -179,6 +194,56 @@ export type UserRecommendationsResponse = {
   nextCursor: number | null;
   /** false gdy użytkownik nie ma jeszcze profilu (embeddingu) */
   hasEmbedding: boolean;
+};
+
+/* =========================
+   RECOMMENDATION EXPLAIN
+   Why these recommendations: the profile basis (games the centroid was
+   built from, with their current weights) and the explicit ratings
+   (feedback loop). GET /api/user/me/recommendations/explain
+========================= */
+
+export type ExplainBasisGame = {
+  steamAppid: number;
+  name: string;
+  headerImage: string | null;
+  /** playtime in minutes (steam-library basis only; null for manual picks) */
+  playtimeForever: number | null;
+  /** current profile weight of the game: (1 + log1p(playtime)) * rating/3 */
+  weight: number;
+  /** the user's rating of this game, when one exists */
+  rating: number | null;
+};
+
+export type ExplainRatedGame = {
+  steamAppid: number;
+  name: string;
+  rating: number;
+  /** direction of the Rocchio correction: 'toward' | 'away' | 'neutral' */
+  effect: 'toward' | 'away' | 'neutral';
+};
+
+export type RecommendationExplainResponse = {
+  /** source the profile was built from (persisted on user_embeddings) */
+  source: ProfileSource;
+  /** when the profile embedding was last built */
+  createdAt: string;
+  gamesUsed: number;
+  basisGames: ExplainBasisGame[];
+  ratedGames: ExplainRatedGame[];
+};
+
+/* =========================
+   GAME TAXONOMY (filter options)
+========================= */
+
+export type GameTaxonomyItem = {
+  name: string;
+  gameCount: number;
+};
+
+export type GameTaxonomyResponse = {
+  items: GameTaxonomyItem[];
 };
 
 /* =========================

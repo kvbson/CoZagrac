@@ -9,6 +9,7 @@ import {
 } from '../../controllers/users.controller.js';
 import {
   getUserRecommendations,
+  getRecommendationExplain,
   getUserEmbeddingStatus,
   regenerateUserEmbedding,
 } from '../../controllers/recommendation.controller.js';
@@ -65,13 +66,16 @@ router.get('/me', requireAuth, me);
 // GET /user/me/library - Steam library with playtime, enriched with catalog images
 router.get('/me/library', requireAuth, getUserLibrary);
 
-// GET /user/me/recommendations?limit=&cursor=&isFree=&minDiscount=&minReviewTier=&yearFrom=&platform=
+// GET /user/me/recommendations?limit=&cursor=&isFree=&minDiscount=&minReviewTier=&yearFrom=&platform=&genres=
 router.get(
   '/me/recommendations',
   requireAuth,
   validate(getUserRecommendationsHttpSchema),
   getUserRecommendations,
 );
+
+// GET /user/me/recommendations/explain - profile basis + rating feedback state
+router.get('/me/recommendations/explain', requireAuth, getRecommendationExplain);
 
 // GET /user/me/favorites - manual profile basis (user-picked games)
 router.get('/me/favorites', requireAuth, getFavorites);

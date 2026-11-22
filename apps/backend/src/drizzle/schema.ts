@@ -106,6 +106,8 @@ export const userEmbeddings = pgTable(
     modelName: varchar('model_name'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
     embeddingVersion: varchar('embedding_version', { length: 32 }).notNull(),
+    /** profile basis the embedding was built from (steam-library | manual-games) */
+    source: varchar({ length: 32 }),
   },
   (table) => [
     index('idx_user_embeddings_user_id').using(

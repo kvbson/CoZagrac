@@ -1,12 +1,28 @@
+import type {
+  ExplainBasisGame,
+  ExplainRatedGame,
+  GameTaxonomyItem,
+  ProfileSource,
+  RecommendationExplainResponse,
+  RecommendationFilters,
+} from '@cozagrac/shared/contracts/api';
+import { MIN_FAVORITE_GAMES } from '@cozagrac/shared/contracts/api';
 import { and, desc, eq, gte, inArray, ne, notInArray, sql } from 'drizzle-orm';
-import type { ProfileSource, RecommendationFilters } from '@cozagrac/shared/contracts/api';
-import { model } from '../clients/openai/index.js';
 import { createEmbeddings } from '../clients/openai/embeddings.js';
-import { QuotaError } from '../utils/usage.helpers.js';
+import { model } from '../clients/openai/index.js';
 import { ownedGamesEndpoint } from '../clients/steam/endpoints/userContext/ownedGames.endpoint.js';
 import { db } from '../db/init.js';
-import { gameEmbeddings, gameInfo, userEmbeddings, userProviders } from '../drizzle/schema.js';
-import { favoritesService } from './favorites.service.js';
+import {
+  gameEmbeddings,
+  gameGenres,
+  gameInfo,
+  genres,
+  userEmbeddings,
+  userFavoriteGames,
+  userProviders,
+} from '../drizzle/schema.js';
+import { syncGameInfo } from '../functions/sync/syncGameInfo.js';
+import { syncReviewsForGames } from '../functions/sync/syncReviewsForGames.js';
 import {
   chunkReviews,
   l2Normalize,
@@ -17,11 +33,11 @@ import {
 } from '../utils/embedding.helpers.js';
 import { logger } from '../utils/logger.js';
 import { applyRatingCorrection, profileWeight } from '../utils/rating.helpers.js';
+import { QuotaError } from '../utils/usage.helpers.js';
+import { favoritesService } from './favorites.service.js';
 import { gameService } from './game.service.js';
 import { ratingsService } from './ratings.service.js';
 import { reviewService } from './review.service.js';
-import { syncGameInfo } from '../functions/sync/syncGameInfo.js';
-import { syncReviewsForGames } from '../functions/sync/syncReviewsForGames.js';
 
 export const LIMITS = {
   MIN_REVIEW_CHARS: 200,
@@ -65,7 +81,41 @@ type GameCardRow = {
   priceFinalFormatted: string | null;
   priceDiscountPercent: number | null;
   reviewTier: string | null;
+  genres: string[] | null;
 };
+
+/**
+ * Top-3 genre names of a game (correlated subquery). Used on recommendation
+ * cards ("because you like RPG...") and as the EXISTS filter's companion.
+ * NULL when the game has no taxonomy rows; COALESCEd to '{}' downstream.
+ */
+const topGenresExpr = sql<string[]>`
+  COALESCE(
+    (
+      SELECT array_agg(sub.name)
+      FROM (
+        SELECT g.name
+        FROM game_genres gg
+        JOIN genres g ON g.id = gg.genre_id
+        WHERE gg.steam_appid = game_embeddings.steam_appid
+        ORDER BY g.name
+        LIMIT 3
+      ) sub
+    ),
+    '{}'
+  )
+`;
+
+/** EXISTS condition: the game has at least one of the given genre names */
+const genreFilterExpr = (names: string[]) => sql`
+  EXISTS (
+    SELECT 1
+    FROM game_genres gg
+    JOIN genres g ON g.id = gg.genre_id
+    WHERE gg.steam_appid = game_embeddings.steam_appid
+      AND g.name = ANY(${names}::text[])
+  )
+`;
 
 function toGameCardItem(r: GameCardRow) {
   return {
@@ -77,6 +127,7 @@ function toGameCardItem(r: GameCardRow) {
     priceFinalFormatted: r.priceFinalFormatted ?? null,
     priceDiscountPercent: r.priceDiscountPercent ?? null,
     reviewTier: r.reviewTier ?? null,
+    genres: r.genres ?? [],
   };
 }
 
@@ -321,6 +372,7 @@ export const embeddingService = {
           priceFinalFormatted: gameInfo.priceFinalFormatted,
           priceDiscountPercent: gameInfo.priceDiscountPercent,
           reviewTier: gameInfo.reviewTier,
+          genres: topGenresExpr,
         })
         .from(gameEmbeddings)
         .innerJoin(gameInfo, eq(gameInfo.steamAppid, gameEmbeddings.steamAppid))
@@ -334,6 +386,32 @@ export const embeddingService = {
         .limit(safeLimit);
 
       return rows.map(toGameCardItem);
+    },
+
+    /**
+     * Genre facets for the recommendations filter: genre names with the
+     * number of catalog games carrying that genre (only games with an
+     * active-version embedding count - those are the actual candidates).
+     */
+    async getGenreFacets(limit = 30): Promise<GameTaxonomyItem[]> {
+      const gameCountExpr = sql<number>`count(distinct ${gameGenres.steamAppid})::int`;
+
+      const rows = await db
+        .select({ name: genres.name, gameCount: gameCountExpr })
+        .from(genres)
+        .innerJoin(gameGenres, eq(gameGenres.genreId, genres.id))
+        .innerJoin(
+          gameEmbeddings,
+          and(
+            eq(gameEmbeddings.steamAppid, gameGenres.steamAppid),
+            eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION),
+          ),
+        )
+        .groupBy(genres.id, genres.name)
+        .orderBy(desc(gameCountExpr))
+        .limit(limit);
+
+      return rows.map((r) => ({ name: r.name ?? 'Unknown', gameCount: Number(r.gameCount) }));
     },
   },
 
@@ -448,6 +526,7 @@ export const embeddingService = {
           embedding: finalEmbedding,
           modelName: model,
           embeddingVersion: 'v2-centroid',
+          source: 'steam-library',
         });
       });
 
@@ -534,6 +613,7 @@ export const embeddingService = {
           embedding: finalEmbedding,
           modelName: model,
           embeddingVersion: 'v2-centroid',
+          source: 'manual-games',
         });
       });
 
@@ -645,6 +725,8 @@ export const embeddingService = {
           sql`substring(${gameInfo.releaseDate} from '[0-9]{4}')::int >= ${filters.yearFrom}`,
         );
       if (filters.platform) conditions.push(eq(PLATFORM_COLUMNS[filters.platform], true));
+      // genre facet: OR within the selected genres, AND with the other filters
+      if (filters.genres?.length) conditions.push(genreFilterExpr(filters.genres));
 
       const rows = await db
         .select({
@@ -656,6 +738,7 @@ export const embeddingService = {
           priceFinalFormatted: gameInfo.priceFinalFormatted,
           priceDiscountPercent: gameInfo.priceDiscountPercent,
           reviewTier: gameInfo.reviewTier,
+          genres: topGenresExpr,
         })
         .from(gameEmbeddings)
         .innerJoin(gameInfo, eq(gameInfo.steamAppid, gameEmbeddings.steamAppid))
@@ -668,6 +751,128 @@ export const embeddingService = {
       const nextCursor = items.length === safeLimit ? items[items.length - 1].similarity : null;
 
       return { items, nextCursor };
+    },
+
+    /**
+     * Why these recommendations: the profile basis with current weights and
+     * the explicit-rating feedback loop state. Weights are recomputed with
+     * the same profileWeight() as during the build, so a game rated after
+     * the build shows the weight it would have today (consistent with what
+     * the engine would use on the next rebuild).
+     */
+    async explainForUser(userId: string): Promise<RecommendationExplainResponse | null> {
+      const [userEmb] = await db
+        .select({ source: userEmbeddings.source, createdAt: userEmbeddings.createdAt })
+        .from(userEmbeddings)
+        .where(eq(userEmbeddings.userId, userId))
+        .orderBy(desc(userEmbeddings.createdAt))
+        .limit(1);
+
+      if (!userEmb) return null;
+
+      const ratingByAppid = await ratingsService.getRatingMap(userId);
+      const favoriteIds = await favoritesService.getAppIds(userId);
+
+      // column is null for profiles built before it existed; infer then:
+      // favorites double as the exclusion list (they survive a rebuild from
+      // steam-library), so their presence alone does NOT imply a manual
+      // basis. Manual is plausible only when there are at least
+      // MIN_FAVORITE_GAMES of them (the manual build requires that many)
+      // and the last pick happened no later than the build itself.
+      let source: ProfileSource;
+      if (userEmb.source === 'steam-library' || userEmb.source === 'manual-games') {
+        source = userEmb.source;
+      } else if (favoriteIds.length >= MIN_FAVORITE_GAMES) {
+        const [lastPick] = await db
+          .select({ lastPickAt: sql<string | null>`max(${userFavoriteGames.createdAt})` })
+          .from(userFavoriteGames)
+          .where(eq(userFavoriteGames.userId, userId));
+
+        const builtAt = userEmb.createdAt ? new Date(userEmb.createdAt).getTime() : 0;
+        const pickedAt = lastPick?.lastPickAt ? new Date(lastPick.lastPickAt).getTime() : 0;
+        source = pickedAt <= builtAt ? 'manual-games' : 'steam-library';
+      } else {
+        source = 'steam-library';
+      }
+
+      const basisGames: ExplainBasisGame[] = [];
+
+      if (source === 'manual-games') {
+        const favorites = await favoritesService.getFavorites(userId);
+
+        for (const game of favorites) {
+          const rating = ratingByAppid.get(game.steamAppid);
+          basisGames.push({
+            steamAppid: game.steamAppid,
+            name: game.name,
+            headerImage: game.headerImage,
+            playtimeForever: null,
+            weight: profileWeight(undefined, rating),
+            rating: rating ?? null,
+          });
+        }
+      } else {
+        // steam-library basis: the same top-50-by-playtime set the build used
+        const [provider] = await db
+          .select({ steamId: userProviders.providerUserId })
+          .from(userProviders)
+          .where(eq(userProviders.userId, userId))
+          .limit(1);
+
+        if (provider?.steamId) {
+          const { response } = await ownedGamesEndpoint.getData(provider.steamId);
+          const ownedGames = response?.games ?? [];
+          const topGames = [...ownedGames]
+            .sort((a, b) => (b.playtime_forever ?? 0) - (a.playtime_forever ?? 0))
+            .slice(0, USER_LIMITS.MAX_GAMES_FOR_USER);
+
+          if (topGames.length) {
+            const infos = await db
+              .select({
+                steamAppid: gameInfo.steamAppid,
+                name: gameInfo.name,
+                headerImage: gameInfo.headerImage,
+              })
+              .from(gameInfo)
+              .where(
+                inArray(
+                  gameInfo.steamAppid,
+                  topGames.map((g) => g.appid),
+                ),
+              );
+            const infoByAppid = new Map(infos.map((i) => [i.steamAppid, i]));
+
+            for (const game of topGames) {
+              const info = infoByAppid.get(game.appid);
+              if (!info) continue; // not in catalog -> never entered the centroid
+              const rating = ratingByAppid.get(game.appid);
+              basisGames.push({
+                steamAppid: game.appid,
+                name: info.name ?? `Game ${game.appid}`,
+                headerImage: info.headerImage ?? null,
+                playtimeForever: game.playtime_forever ?? 0,
+                weight: profileWeight(game.playtime_forever ?? 0, rating),
+                rating: rating ?? null,
+              });
+            }
+          }
+        }
+      }
+
+      const ratedGames: ExplainRatedGame[] = (await ratingsService.getRatings(userId)).map((r) => ({
+        steamAppid: r.steamAppid,
+        name: r.name,
+        rating: r.rating,
+        effect: r.rating >= 4 ? 'toward' : r.rating <= 2 ? 'away' : 'neutral',
+      }));
+
+      return {
+        source,
+        createdAt: userEmb.createdAt ?? new Date().toISOString(),
+        gamesUsed: basisGames.length,
+        basisGames,
+        ratedGames,
+      };
     },
   },
 };

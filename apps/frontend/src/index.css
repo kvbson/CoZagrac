@@ -50,7 +50,11 @@ body {
   min-height: 100vh;
   overflow-wrap: break-word;
   background:
-    radial-gradient(1100px 420px at 75% -140px, rgba(69, 167, 230, 0.16), transparent 70%),
+    radial-gradient(
+      1100px 420px at 75% -140px,
+      rgba(69, 167, 230, 0.16),
+      rgba(69, 167, 230, 0) 70%
+    ),
     linear-gradient(180deg, var(--bg-page) 0%, #16202c 60%, var(--bg-deep) 100%);
   background-attachment: fixed;
 }
@@ -276,8 +280,11 @@ select {
 
 .auth-page {
   max-width: 380px;
-  margin: 72px auto;
-  padding: 0 16px;
+  /* padding instead of margin: a top margin would collapse through #root
+     and shift the body box down, exposing the solid html background as a
+     band above the page (body paints its gradient only inside its box) */
+  padding: 72px 16px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -806,6 +813,194 @@ select {
 }
 .chip--active:hover:not(:disabled) {
   color: #10222f;
+}
+
+/* ---- genre filter combo (input + dropdown list) ---- */
+.combo {
+  position: relative;
+}
+.combo__control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: transparent;
+}
+.combo__control:focus-within {
+  border-color: var(--accent);
+}
+.combo__input {
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: var(--text-soft);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  width: 96px;
+  padding: 0;
+}
+.combo__input::placeholder {
+  color: var(--muted);
+}
+.combo__arrow {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.combo__arrow:hover {
+  color: #ffffff;
+}
+.combo__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 230px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.combo__item {
+  display: grid;
+  grid-template-columns: 15px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+.combo__item:hover {
+  background: rgba(102, 192, 244, 0.08);
+}
+.combo__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.combo__item .badge {
+  justify-self: end;
+}
+.combo__menu .muted,
+.combo__menu .error {
+  margin: 4px 6px;
+  font-size: 0.8rem;
+}
+
+/* uniform square checkboxes (options + master on the input) */
+.genre-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+  vertical-align: middle;
+  justify-self: start;
+  box-sizing: border-box;
+}
+/* center the tick inside the box: the ::after is sized against the CONTENT
+   box (15px minus 2x1px border), so offsets are computed for 13x13 */
+.genre-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 3.75px;
+  top: 0.75px;
+  width: 4.5px;
+  height: 8.5px;
+  border: solid #0d1620;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(40deg);
+}
+.genre-check:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 2.75px;
+  top: 5.5px;
+  width: 7.5px;
+  height: 1.5px;
+  background: #0d1620;
+}
+.genre-check:hover {
+  border-color: var(--accent);
+}
+.genre-check:checked,
+.genre-check:indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* genre chips on recommendation cards */
+.badge--genre {
+  background: rgba(102, 192, 244, 0.18);
+}
+
+/* ---- recommendation explain panel ---- */
+.explain {
+  margin: 0 0 16px;
+}
+.explain .chip {
+  margin-bottom: 10px;
+}
+.explain__body {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  padding: 14px 16px;
+}
+.explain__body h3 {
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+}
+.explain__body p {
+  margin: 0 0 4px;
+}
+.explain__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.explain__list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+.explain__name {
+  color: #ffffff;
+  font-weight: 600;
+}
+.explain__list img {
+  border-radius: 2px;
+  object-fit: cover;
 }
 
 /* ---- profile source wizard ---- */

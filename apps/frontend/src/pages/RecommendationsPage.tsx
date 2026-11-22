@@ -5,6 +5,8 @@ import { Button } from '../components/ui/Button';
 import { ViewToggle } from '../components/ui/ViewToggle';
 import { AuthContext } from '../context/AuthContext';
 import { trackEvent } from '../features/analytics/analytics';
+import { ExplainPanel } from '../features/recommendations/ExplainPanel';
+import { GenreFilter } from '../features/recommendations/GenreFilter';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
 import { RecommendationsTable } from '../features/recommendations/RecommendationsTable';
 import { useRecommendations } from '../features/recommendations/useRecommendations';
@@ -74,6 +76,11 @@ function readFilters(params: URLSearchParams): RecommendationFilters {
   const platform = params.get('platform');
   if (platform === 'windows' || platform === 'mac' || platform === 'linux')
     filters.platform = platform;
+
+  const genres = params.get('genres');
+  if (genres) {
+    filters.genres = [...new Set(genres.split(',').map((g) => g.trim()).filter(Boolean))];
+  }
 
   return filters;
 }
@@ -196,7 +203,14 @@ export function RecommendationsPage() {
             </div>
           );
         })}
+
+        <GenreFilter
+          selected={filters.genres ?? []}
+          onChange={(genres) => setFilterParam('genres', genres.join(','))}
+        />
       </div>
+
+      <ExplainPanel />
 
       {error && <p className="error">{error}</p>}
 

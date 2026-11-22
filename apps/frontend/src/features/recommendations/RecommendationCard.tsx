@@ -42,6 +42,16 @@ export function RecommendationCard({ item, rating, onRate }: Props) {
           ) : null}
         </div>
 
+        {item.genres.length > 0 && (
+          <div className="card__meta">
+            {item.genres.map((genre) => (
+              <span key={genre} className="badge badge--genre">
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
+
         {onRate ? (
           <RatingSlider rating={rating} onRate={onRate} label={item.name} />
         ) : null}

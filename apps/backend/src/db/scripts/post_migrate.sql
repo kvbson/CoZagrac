@@ -46,4 +46,10 @@ SET search_vector = to_tsvector(
 )
 WHERE search_vector IS NULL;
 
+-- Profile-basis source (steam-library | manual-games) persisted on the
+-- embedding so GET /user/me/recommendations/explain survives restarts.
+-- NULL for profiles built before this column existed (explain falls back
+-- to inferring the source from user_favorite_games).
+ALTER TABLE user_embeddings ADD COLUMN IF NOT EXISTS source varchar(32);
+
 COMMIT;

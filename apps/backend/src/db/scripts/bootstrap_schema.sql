@@ -181,7 +181,8 @@ CREATE TABLE user_embeddings (
   embedding vector(1536) NOT NULL,
   model_name varchar,
   created_at timestamptz DEFAULT now(),
-  embedding_version varchar(32) NOT NULL
+  embedding_version varchar(32) NOT NULL,
+  source varchar(32)
 );
 
 -- manual profile basis: user-picked favorite games (also excluded from
