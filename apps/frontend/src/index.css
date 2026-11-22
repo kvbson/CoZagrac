@@ -594,6 +594,12 @@ select {
 
 .error {
   color: #ff8a94;
+  background: rgba(255, 90, 104, 0.08);
+  border: 1px solid rgba(255, 90, 104, 0.35);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  text-align: left;
 }
 
 .muted {
@@ -979,13 +985,25 @@ select {
 .auth-form__consent {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
   font-size: 0.85rem;
+  line-height: 1.45;
   color: var(--text-soft);
+  cursor: pointer;
 }
 .auth-form__consent input {
-  margin-top: 4px;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
   accent-color: var(--accent);
+  cursor: pointer;
+}
+.auth-form__consent span {
+  text-align: left;
 }
 .auth-form__consent a {
   color: var(--accent);

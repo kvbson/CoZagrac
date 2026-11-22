@@ -17,25 +17,33 @@ export function EmailAuthForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // backend requires a 6+ char password (registerUserHttpSchema); gate the
+  // button on it so the raw Zod message never reaches the user
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordOk = password.length >= 6;
+  const canSubmit =
+    mode === 'login'
+      ? email.trim() !== '' && password !== ''
+      : emailOk && passwordOk && acceptedPrivacy;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (mode === 'register' && !acceptedPrivacy) {
-      setError('Please accept the privacy policy first.');
-      return;
-    }
+    if (!canSubmit) return;
 
     setLoading(true);
 
     const res =
       mode === 'login'
-        ? await userService.login({ email, password })
-        : await userService.register({ email, password, acceptedPrivacyPolicy: true });
+        ? await userService.login({ email: email.trim(), password })
+        : await userService.register({ email: email.trim(), password, acceptedPrivacyPolicy: true });
 
     if (!res.success) {
       setLoading(false);
-      setError(res.error?.message ?? (mode === 'login' ? 'Login failed' : 'Registration failed'));
+      // strip the zod path prefix ("body.password: ...") from backend messages
+      const raw = res.error?.message ?? (mode === 'login' ? 'Login failed' : 'Registration failed');
+      setError(raw.replace(/^body\./, ''));
       return;
     }
 
@@ -63,10 +71,11 @@ export function EmailAuthForm() {
 
       <Input
         type="password"
-        placeholder="Password"
+        placeholder={mode === 'register' ? 'Password (min. 6 characters)' : 'Password'}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
+        minLength={mode === 'register' ? 6 : undefined}
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
       />
 
@@ -85,7 +94,7 @@ export function EmailAuthForm() {
 
       {error && <p className="error">{error}</p>}
 
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={!canSubmit || loading}>
         {loading ? 'Please wait…' : mode === 'login' ? 'Login' : 'Register'}
       </Button>
 

@@ -86,11 +86,13 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
         InfiniteData<ServiceResponse<UserRecommendationsResponse>, unknown>
       >({ queryKey: ['recommendations'] }, (data) => removeItem(data, steamAppid));
     },
-    onSettled: (_data, error) => {
+    onSettled: (data, error) => {
       void queryClient.invalidateQueries({ queryKey: ['ratings'] });
 
-      if (error) {
-        showMessage('error', 'Could not save your rating. Please try again.');
+      // fetchApi never rejects - a failed save (422/401/network) arrives as
+      // data.success === false, so both paths must be checked explicitly
+      if (error || !data?.success) {
+        showMessage('error', data?.error?.message ?? 'Could not save your rating. Please try again.');
       } else {
         showMessage('success', 'Rating saved.');
       }
@@ -103,13 +105,13 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
 
   const resetMutation = useMutation({
     mutationFn: () => ratingsService.removeAll(),
-    onSettled: (_data, error) => {
+    onSettled: (data, error) => {
       void queryClient.invalidateQueries({ queryKey: ['ratings'] });
       // ratings influence the query-time centroid correction - refresh lists
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
 
-      if (error) {
-        showMessage('error', 'Could not clear your ratings. Please try again.');
+      if (error || !data?.success) {
+        showMessage('error', data?.error?.message ?? 'Could not clear your ratings. Please try again.');
       } else {
         showMessage('success', 'All ratings cleared.');
       }
