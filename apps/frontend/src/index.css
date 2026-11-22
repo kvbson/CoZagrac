@@ -623,6 +623,14 @@ select {
   margin-right: 2px;
 }
 
+.input-error {
+  display: block;
+  color: #ff8a94;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  text-align: left;
+}
+
 .muted {
   color: var(--muted);
 }
