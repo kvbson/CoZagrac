@@ -51,6 +51,16 @@ const byAppId = (appId: number) => CATALOG.find((game) => game.steamAppid === ap
 
 const MOCK_USER_ID = '00000000-0000-0000-0000-000000000001';
 
+/** in-memory ratings store (module-lifetime; survives HMR within the session) */
+const MOCK_RATINGS = new Map<number, number>([
+  [1517290, 4], // not in the mock "Steam library" below -> shows in Rated games
+  [1623730, 2],
+]);
+
+/** appids the mock Steam library contains (first 10 catalog entries; the
+ * last two rated games intentionally fall outside it -> Rated games tab) */
+const MOCK_LIBRARY_APPIDS = new Set(CATALOG.slice(0, 10).map((game) => game.steamAppid));
+
 const readBody = async (req: IncomingMessage): Promise<Record<string, unknown>> =>
   new Promise((resolve) => {
     let raw = '';
@@ -128,11 +138,15 @@ const MOCK_EXPLAIN = {
     weight: Number((index === 0 ? 4 / 3 : index === 1 ? 2 / 3 : index === 2 ? 4 / 3 : 1).toFixed(3)),
     rating: index === 0 || index === 2 ? 4 : index === 1 ? 2 : null,
   })),
-  ratedGames: [
-    { steamAppid: CATALOG[0].steamAppid, name: CATALOG[0].name, rating: 4, effect: 'toward' },
-    { steamAppid: CATALOG[2].steamAppid, name: CATALOG[2].name, rating: 4, effect: 'toward' },
-    { steamAppid: CATALOG[1].steamAppid, name: CATALOG[1].name, rating: 2, effect: 'away' },
-  ],
+  ratedGames: [...MOCK_RATINGS.entries()].map(([steamAppid, rating]) => ({
+    steamAppid,
+    name: byAppId(steamAppid)?.name ?? `Game ${steamAppid}`,
+    rating,
+    effect: (rating >= 4 ? 'toward' : rating <= 2 ? 'away' : 'neutral') as
+      | 'toward'
+      | 'away'
+      | 'neutral',
+  })),
 };
 
 const handleApi = async (req: IncomingMessage, res: ServerResponse, url: URL) => {
@@ -170,17 +184,32 @@ const handleApi = async (req: IncomingMessage, res: ServerResponse, url: URL) =>
       return true;
     }
 
-    case 'GET /api/user/me/library':
-      sendJson(res, 200, {
-        steamLinked: true,
-        items: CATALOG.map((game, index) => ({
+    case 'GET /api/user/me/library': {
+      // steam part: first 12 catalog games with playtime; plus rated games
+      // outside that set (rated-games section, playtime 0)
+      const libraryItems = CATALOG.filter((game) => MOCK_LIBRARY_APPIDS.has(game.steamAppid)).map(
+        (game, index) => ({
           steamAppid: game.steamAppid,
           name: game.name,
           playtimeForever: Math.round((1 + index * 3.7) * 60),
           headerImage: headerImage(game.steamAppid),
-        })),
-      });
+        }),
+      );
+      const ratedOnly = [...MOCK_RATINGS.entries()]
+        .filter(([appid]) => !MOCK_LIBRARY_APPIDS.has(appid))
+        .map(([appid, rating]) => {
+          const game = byAppId(appid);
+          return {
+            steamAppid: appid,
+            name: game?.name ?? `Game ${appid}`,
+            playtimeForever: 0,
+            headerImage: headerImage(appid),
+            rating,
+          };
+        });
+      sendJson(res, 200, { steamLinked: true, items: [...libraryItems, ...ratedOnly] });
       return true;
+    }
 
     case 'GET /api/user/me/recommendations': {
       const limit = Math.min(Number(url.searchParams.get('limit')) || 20, CATALOG.length);
@@ -204,9 +233,18 @@ const handleApi = async (req: IncomingMessage, res: ServerResponse, url: URL) =>
       sendJson(res, 200, { status: 'done', gamesUsed: 10, source: 'manual-games' });
       return true;
 
-    case 'GET /api/user/me/ratings':
-      sendJson(res, 200, { items: [] });
+    case 'GET /api/user/me/ratings': {
+      // ratings persisted in module memory (see MOCK_RATINGS below)
+      sendJson(res, 200, {
+        items: [...MOCK_RATINGS.entries()].map(([steamAppid, rating]) => ({
+          steamAppid,
+          rating,
+          name: byAppId(steamAppid)?.name ?? `Game ${steamAppid}`,
+          headerImage: headerImage(steamAppid),
+        })),
+      });
       return true;
+    }
 
     case 'POST /api/auth/logout':
       sendJson(res, 200, { message: 'mocked logout' });
@@ -300,15 +338,25 @@ const handleApi = async (req: IncomingMessage, res: ServerResponse, url: URL) =>
     return true;
   }
 
-  // ratings mutations: echo the payload
-  if (pathname === '/api/user/me/ratings' && (method === 'PUT' || method === 'DELETE')) {
-    const body = method === 'PUT' ? await readBody(req) : {};
-    sendJson(res, 200, method === 'PUT' ? { steamAppid: body.steamAppid, rating: body.rating } : null);
+  // ratings mutations: persist in module memory
+  if (pathname === '/api/user/me/ratings' && method === 'PUT') {
+    const body = await readBody(req);
+    const steamAppid = Number(body.steamAppid);
+    const rating = Number(body.rating);
+    MOCK_RATINGS.set(steamAppid, rating);
+    sendJson(res, 200, { steamAppid, rating });
+    return true;
+  }
+
+  if (pathname === '/api/user/me/ratings' && method === 'DELETE') {
+    MOCK_RATINGS.clear();
+    sendJson(res, 204, null);
     return true;
   }
 
   if (method === 'DELETE' && pathname.startsWith('/api/user/me/ratings/')) {
-    sendJson(res, 200, null);
+    MOCK_RATINGS.delete(Number(pathname.split('/').pop()));
+    sendJson(res, 204, null);
     return true;
   }
 

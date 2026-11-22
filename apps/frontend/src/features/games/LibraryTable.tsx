@@ -10,12 +10,14 @@ type Props = {
   /** persisted ratings from the page's useRatings() instance */
   ratings: Map<number, number>;
   onRate: (steamAppid: number, rating: number) => void;
+  /** removes a single rating (game returns to recommendation candidates) */
+  onRemove?: (steamAppid: number) => void;
   ratingPending: boolean;
 };
 
 /** Details (table) view of the Steam library. Games outside our catalog get
  * a "not in catalog" badge and no rating slider (consistent with the grid). */
-export function LibraryTable({ games, ratings, onRate, ratingPending }: Props) {
+export function LibraryTable({ games, ratings, onRate, onRemove, ratingPending }: Props) {
   const columns: GameColumn<UserLibraryGame>[] = [
     {
       id: 'name',
@@ -39,17 +41,34 @@ export function LibraryTable({ games, ratings, onRate, ratingPending }: Props) {
     {
       id: 'rating',
       label: 'Your rating',
-      render: (game) =>
-        game.headerImage ? (
-          <RatingSlider
-            rating={ratings.get(game.steamAppid)}
-            onRate={(value) => onRate(game.steamAppid, value)}
-            label={game.name}
-            disabled={ratingPending}
-          />
+      render: (game) => {
+        const rating = ratings.get(game.steamAppid);
+
+        return game.headerImage ? (
+          <span className="rating-cell">
+            <RatingSlider
+              rating={rating}
+              onRate={(value) => onRate(game.steamAppid, value)}
+              label={game.name}
+              disabled={ratingPending}
+            />
+            {onRemove && rating !== undefined && (
+              <button
+                type="button"
+                className="rating-remove"
+                title="Remove rating"
+                aria-label={`Remove rating for ${game.name}`}
+                disabled={ratingPending}
+                onClick={() => onRemove(game.steamAppid)}
+              >
+                ×
+              </button>
+            )}
+          </span>
         ) : (
           <span className="muted">—</span>
-        ),
+        );
+      },
     },
   ];
 
