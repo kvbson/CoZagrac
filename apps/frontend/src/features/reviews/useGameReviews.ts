@@ -6,7 +6,7 @@ const PAGE_SIZE = 10;
 
 /**
  * Stronicowane recenzje (page-based, nie kursorowe - backend zwraca {page, pages}).
- * Backend oddaje 404 gdy brak recenzji - to stan "pusty", nie błąd.
+ * Pusty zbiór to 200 z items: [] - stan "pusty", nie błąd.
  */
 export function useGameReviews(
   steamAppid: number,

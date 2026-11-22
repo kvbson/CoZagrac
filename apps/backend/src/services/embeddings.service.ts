@@ -16,7 +16,9 @@ import {
   weightedMean,
 } from '../utils/embedding.helpers.js';
 import { logger } from '../utils/logger.js';
+import { applyRatingCorrection, profileWeight } from '../utils/rating.helpers.js';
 import { gameService } from './game.service.js';
+import { ratingsService } from './ratings.service.js';
 import { reviewService } from './review.service.js';
 import { syncGameInfo } from '../functions/sync/syncGameInfo.js';
 import { syncReviewsForGames } from '../functions/sync/syncReviewsForGames.js';
@@ -426,9 +428,14 @@ export const embeddingService = {
         return null;
       }
 
+      // rating-weighted centroid: w = (1 + log1p(playtime)) * rating/3
+      // (rating 3 = neutral); unrated games use the playtime weight only
+      const playtimeByAppid = new Map(topGames.map((g) => [g.appid, g.playtime_forever ?? 0]));
+      const ratingByAppid = await ratingsService.getRatingMap(userId);
+
       const vectors = gameEmbRows.map((r) => ({
         vec: r.embedding,
-        weight: 1,
+        weight: profileWeight(playtimeByAppid.get(r.steamAppid), ratingByAppid.get(r.steamAppid)),
       }));
 
       const finalEmbedding = l2Normalize(weightedMean(vectors));
@@ -510,7 +517,13 @@ export const embeddingService = {
         return quotaReached ? { gamesUsed: 0, quotaReached: true } : null;
       }
 
-      const vectors = rows.map((r) => ({ vec: r.embedding, weight: 1 }));
+      // no playtime data for manual picks - only the rating factor applies
+      // (rating/3, rating 3 = neutral); unrated games weight 1
+      const ratingByAppid = await ratingsService.getRatingMap(userId);
+      const vectors = rows.map((r) => ({
+        vec: r.embedding,
+        weight: profileWeight(undefined, ratingByAppid.get(r.steamAppid)),
+      }));
       const finalEmbedding = l2Normalize(weightedMean(vectors));
 
       await db.transaction(async (tx) => {
@@ -535,18 +548,31 @@ export const embeddingService = {
 
     /**
      * Recommend games for a user (kNN against game embeddings).
-     * - excludes games already owned (Steam library),
+     * - excludes games already owned (Steam library), favorites and rated,
      * - only active game-embedding version,
      * - cursor = similarity of the last returned item; next batch is below it.
      * Returns null when the user has no profile embedding yet.
+     *
+     * `embeddingOverride` (evaluation scripts): use the given vector as the
+     * profile INSTEAD of the stored one - and skip the rating correction
+     * (the caller owns the vector math; e.g. leave-one-out centroids).
      */
     async recommendForUser(
       userId: string,
       {
         limit = 20,
         cursor,
+        embeddingOverride,
+        excludeRated = true,
         ...filters
-      }: { limit?: number; cursor?: number } & RecommendationFilters = {},
+      }: {
+        limit?: number;
+        cursor?: number;
+        /** evaluation only: profile vector computed by the caller (skips the rating correction) */
+        embeddingOverride?: number[];
+        /** evaluation only: keep rated games among candidates (explicit-feedback protocol) */
+        excludeRated?: boolean;
+      } & RecommendationFilters = {},
     ) {
       const safeLimit = Math.min(limit, 50);
 
@@ -573,11 +599,35 @@ export const embeddingService = {
 
       // manual picks count as "already known" too - never recommend them back
       const favoriteIds = await favoritesService.getAppIds(userId);
-      const excludeIds = [...new Set([...ownedIds, ...favoriteIds])];
+
+      let profileEmbedding = userEmb.embedding;
+      let ratedIds: number[] = [];
+
+      if (embeddingOverride) {
+        profileEmbedding = embeddingOverride;
+        if (excludeRated) ratedIds = await ratingsService.getRatedAppIds(userId);
+      } else {
+        // explicit feedback: rated games leave the candidate set and correct
+        // the centroid at query time (no profile rebuild, no OpenAI calls).
+        // Cursor caveat: the correction uses current ratings, so re-rating
+        // mid-pagination shifts the similarity scale the cursor refers to.
+        const rated = await ratingsService.getRatedEmbeddings(userId, ACTIVE_EMBEDDING_VERSION);
+        ratedIds = rated.map((r) => r.steamAppid);
+
+        if (rated.length > 0) {
+          profileEmbedding = applyRatingCorrection(
+            userEmb.embedding,
+            rated.map((r) => ({ vec: r.embedding, rating: r.rating })),
+          );
+          logger.info('[RECOMMEND][FEEDBACK]', { userId, ratedGames: rated.length });
+        }
+      }
+
+      const excludeIds = [...new Set([...ownedIds, ...favoriteIds, ...ratedIds])];
 
       // jw. - embedding z bazy to number[]; do sql-a trzeba go w formacie wektora pgvector
       const similarityExpr = sql<number>`
-    1 - (${gameEmbeddings.embedding} <=> ${toPgVector(userEmb.embedding)}::vector)
+    1 - (${gameEmbeddings.embedding} <=> ${toPgVector(profileEmbedding)}::vector)
   `;
 
       const conditions = [eq(gameEmbeddings.embeddingVersion, ACTIVE_EMBEDDING_VERSION)];

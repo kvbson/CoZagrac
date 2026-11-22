@@ -2,10 +2,13 @@ import { useContext, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { RecommendationFilters } from '@cozagrac/shared/contracts/api';
 import { Button } from '../components/ui/Button';
+import { ViewToggle } from '../components/ui/ViewToggle';
 import { AuthContext } from '../context/AuthContext';
 import { trackEvent } from '../features/analytics/analytics';
 import { RecommendationList } from '../features/recommendations/RecommendationList';
+import { RecommendationsTable } from '../features/recommendations/RecommendationsTable';
 import { useRecommendations } from '../features/recommendations/useRecommendations';
+import { useViewPreference } from '../features/games/useViewPreference';
 import { ProfileWizard } from '../features/profile/ProfileWizard';
 
 /** grupowe chipy filtrów; value '' znaczy "wyłącz filtr" */
@@ -79,6 +82,8 @@ export function RecommendationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const [wizardOpen, setWizardOpen] = useState(false);
+  // pure UI state, remembered per page in localStorage
+  const [view, setView] = useViewPreference('recommendations');
   const filters = readFilters(searchParams);
 
   const {
@@ -155,9 +160,12 @@ export function RecommendationsPage() {
       <div className="page__header">
         <h1>Your recommendations</h1>
 
-        <Button onClick={() => setWizardOpen(true)} disabled={building}>
-          {building ? 'Recalculating profile…' : 'Recalculate profile'}
-        </Button>
+        <div className="page__actions">
+          <ViewToggle view={view} onChange={setView} />
+          <Button onClick={() => setWizardOpen(true)} disabled={building}>
+            {building ? 'Recalculating profile…' : 'Recalculate profile'}
+          </Button>
+        </div>
       </div>
 
       <div className="filters">
@@ -201,6 +209,8 @@ export function RecommendationsPage() {
 
       {items.length === 0 && !building ? (
         <p>No games match these filters. Try recalculating your profile or loosening the filters.</p>
+      ) : view === 'details' ? (
+        <RecommendationsTable items={items} />
       ) : (
         <RecommendationList items={items} />
       )}

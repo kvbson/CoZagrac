@@ -11,7 +11,9 @@ Projekt inżynierski: **system rekomendacji treści z wykorzystaniem modeli
 
 ## Kluczowe funkcje
 
-- Logowanie przez **Steam (OpenID, passport-steam)** oraz kontem e-mail/hasło (bcrypt, sesje w PostgreSQL).
+- Logowanie przez **Steam (OpenID, passport-steam)** oraz kontem e-mail/hasło (bcrypt, sesje w PostgreSQL, zgoda na politykę prywatności przy rejestracji — [strona /privacy](apps/frontend/src/pages/PrivacyPage.tsx)).
+- **Oceny gier 1–5** (suwak na kartach rekomendacji, w bibliotece i na stronie gry): pętla informacji zwrotnej — korekta centroidu w stylu Rocchio w czasie zapytania, ważenie profilu przy buildzie, reset wszystkich ocen. Szczegóły: `docs/oceny_uzytkownika_petla_informacji_zwrotnej.md`.
+- Dwa widoki list gier (grid / tabela szczegółów jak w Eksploratorze Windows) z sortowaniem, wybór zapamiętywany w localStorage.
 - Pobieranie biblioteki gier, oszacowanego czasu gry, recenzji i statystyk z **Steam Web API**.
 - **Synchronizacja katalogu gier** ze Steama (lista aplikacji, szczegóły, recenzje ze strumieniowym parsowaniem JSON, retry, filtrowanie kandydatów po liczbie recenzji — progi S/A/B).
 - **Silnik rekomendacji** (embeddingi):
@@ -74,7 +76,7 @@ cp apps/backend/.env.example  apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env
 # uzupełnij .env: DATABASE_URL, STEAM_API_KEY, SESSION_SECRET, OPENAI_API_KEY
 
-psql "$DATABASE_URL" -f apps/backend/src/db/scripts/postgre_schema.sql   # stworzenie schematu
+psql "$DATABASE_URL" -f apps/backend/src/db/scripts/bootstrap_schema.sql   # stworzenie schematu (kolejność: extensions.sql → bootstrap_schema.sql → post_migrate.sql → grants.sql → verify.sql)
 
 npm run dev    # frontend (Vite :5137) + backend (Express :3001) + typecheck
 ```

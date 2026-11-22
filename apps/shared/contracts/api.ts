@@ -28,6 +28,22 @@ export const loginUserHttpSchema = z.object({
   }),
 });
 
+/**
+ * Registration additionally requires the privacy-policy consent (checkbox in
+ * the email form); `z.literal(true)` makes an unchecked box a 400 before
+ * touching the database. No consent column - an account cannot exist
+ * without consent, so created_at doubles as the consent timestamp.
+ */
+export const registerUserHttpSchema = z.object({
+  body: z.object({
+    email: z.email(),
+    password: z.string().min(MIN_PASSWORD_LENGTH),
+    acceptedPrivacyPolicy: z.literal(true),
+  }),
+});
+
+export type RegisterUserInput = z.infer<typeof registerUserHttpSchema>['body'];
+
 export type LoginUserInput = z.infer<typeof loginUserHttpSchema>['body'];
 
 /* =========================
@@ -112,9 +128,7 @@ export type CreateProviderInput = z.infer<typeof createProviderHttpSchema>['body
    RECOMMENDATIONS
 ========================= */
 
-export const queryBooleanSchema = z
-  .enum(['true', 'false'])
-  .transform((value) => value === 'true');
+export const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 /**
  * review_tier is a popularity tier from getReviewTier():
@@ -209,6 +223,46 @@ export type UserFavoriteGame = {
 
 export type UserFavoritesResponse = {
   items: UserFavoriteGame[];
+};
+
+/* =========================
+   GAME RATINGS (explicit feedback)
+   A 1-5 rating on a single game, written from recommendation cards and
+   library entries. 4-5 pull the profile centroid toward the game
+   (Rocchio-style correction), 1-2 push it away, 3 is neutral. Rated games
+   leave the recommendation candidate set (the user already expressed an
+   opinion about them).
+========================= */
+
+export const putUserRatingHttpSchema = z.object({
+  body: z.object({
+    steamAppid: z.number().int().positive(),
+    rating: z.number().int().min(1).max(5),
+  }),
+});
+
+export type PutUserRatingBody = z.infer<typeof putUserRatingHttpSchema>['body'];
+
+export const deleteUserRatingHttpSchema = z.object({
+  params: z.object({
+    steamAppid: z.coerce.number().int().positive(),
+  }),
+});
+
+export type DeleteUserRatingParams = z.infer<typeof deleteUserRatingHttpSchema>['params'];
+
+/** DELETE /user/me/ratings - clears every rating of the user (feedback reset). */
+export const deleteAllUserRatingsHttpSchema = z.object({});
+
+export type UserRating = {
+  steamAppid: number;
+  rating: number;
+  name: string;
+  headerImage: string | null;
+};
+
+export type UserRatingsResponse = {
+  items: UserRating[];
 };
 
 /**

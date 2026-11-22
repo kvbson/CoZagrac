@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
 import type { RecommendationItem } from '@cozagrac/shared/contracts/api';
 import { Card } from '../../components/ui/Card';
+import { RatingSlider } from '../../components/ui/RatingSlider';
 
-export function RecommendationCard({ item }: { item: RecommendationItem }) {
+type Props = {
+  item: RecommendationItem;
+  /** persisted rating of this game (feedback loop); undefined = unrated */
+  rating?: number;
+  onRate?: (rating: number) => void;
+};
+
+export function RecommendationCard({ item, rating, onRate }: Props) {
   const storeUrl = `https://store.steampowered.com/app/${item.steamAppid}`;
 
   return (
@@ -33,6 +41,10 @@ export function RecommendationCard({ item }: { item: RecommendationItem }) {
             <span className="badge badge--sale">-{item.priceDiscountPercent}%</span>
           ) : null}
         </div>
+
+        {onRate ? (
+          <RatingSlider rating={rating} onRate={onRate} label={item.name} />
+        ) : null}
 
         <a href={storeUrl} target="_blank" rel="noreferrer">
           View on Steam

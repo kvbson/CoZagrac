@@ -44,6 +44,7 @@ export function Navbar() {
         <NavLink to="/recommendations">Recommendations</NavLink>
         <NavLink to="/library">Library</NavLink>
         <NavLink to="/account">Account</NavLink>
+        <NavLink to="/privacy">Privacy</NavLink>
         <button onClick={handleLogout}>Log out</button>
       </nav>
     </header>

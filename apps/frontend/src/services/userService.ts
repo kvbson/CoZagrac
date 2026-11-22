@@ -1,5 +1,6 @@
 import type {
   LoginUserInput,
+  RegisterUserInput,
   UserLibraryResponse,
 } from '@cozagrac/shared/contracts/api';
 import type { ServiceResponse } from '../types/response';
@@ -22,7 +23,7 @@ export const userService = {
     fetchApi<{ message?: string }>('/api/auth/logout', {
       method: 'POST',
     }),
-  register: async (data: LoginUserInput): Promise<ServiceResponse<{ message?: string }>> =>
+  register: async (data: RegisterUserInput): Promise<ServiceResponse<{ message?: string }>> =>
     fetchApi<{ message?: string }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
