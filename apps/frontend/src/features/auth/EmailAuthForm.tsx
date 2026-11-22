@@ -69,6 +69,12 @@ export function EmailAuthForm() {
         autoComplete="email"
       />
 
+      {mode === 'register' && email !== '' && !emailOk && (
+        <p className="field-hint field-hint--error" role="status">
+          Please enter a valid email address.
+        </p>
+      )}
+
       <Input
         type="password"
         placeholder={mode === 'register' ? 'Password (min. 6 characters)' : 'Password'}
