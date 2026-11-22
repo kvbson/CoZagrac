@@ -79,6 +79,12 @@ export function EmailAuthForm() {
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
       />
 
+      {mode === 'register' && password !== '' && !passwordOk && (
+        <p className="field-hint" role="status">
+          Password must be at least 6 characters.
+        </p>
+      )}
+
       {mode === 'register' && (
         <label className="auth-form__consent">
           <input

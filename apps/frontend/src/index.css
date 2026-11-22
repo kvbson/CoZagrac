@@ -602,6 +602,13 @@ select {
   text-align: left;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: -6px 0 0;
+  text-align: left;
+}
+
 .muted {
   color: var(--muted);
 }
