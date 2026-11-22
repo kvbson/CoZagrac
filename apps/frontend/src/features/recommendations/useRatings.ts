@@ -71,10 +71,17 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
       const saved = res.userData;
       if (!saved) return;
 
-      queryClient.setQueryData<UserRatingsResponse>(['ratings'], (current) => {
-        if (!current) return current;
-        const rest = current.items.filter((item) => item.steamAppid !== saved.steamAppid);
-        return { items: [...rest, { ...saved, name: '', headerImage: null }] };
+      // ['ratings'] cache holds the ServiceResponse wrapper (queryFn returns
+      // ratingsService.get() verbatim), so update inside userData
+      queryClient.setQueryData<ServiceResponse<UserRatingsResponse>>(['ratings'], (current) => {
+        if (!current?.userData) return current;
+        const rest = current.userData.items.filter(
+          (item) => item.steamAppid !== saved.steamAppid,
+        );
+        return {
+          ...current,
+          userData: { items: [...rest, { ...saved, name: '', headerImage: null }] },
+        };
       });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
     },
