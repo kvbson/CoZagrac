@@ -67,6 +67,7 @@ export function EmailAuthForm() {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
+        invalid={mode === 'register' && email !== '' && !emailOk}
       />
 
       {mode === 'register' && email !== '' && !emailOk && (
@@ -83,6 +84,7 @@ export function EmailAuthForm() {
         required
         minLength={mode === 'register' ? 6 : undefined}
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+        invalid={mode === 'register' && password !== '' && !passwordOk}
       />
 
       {mode === 'register' && password !== '' && !passwordOk && (

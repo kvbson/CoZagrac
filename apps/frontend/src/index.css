@@ -613,6 +613,11 @@ select {
   color: #ff8a94;
 }
 
+.input-invalid {
+  border-color: #ff8a94 !important;
+  box-shadow: 0 0 0 1px rgba(255, 90, 104, 0.4);
+}
+
 .req {
   color: #ff8a94;
   margin-right: 2px;
