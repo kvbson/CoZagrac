@@ -2,6 +2,11 @@
 
 > Uzgodniony ze stanem projektu; 9 rozdziałów. Wskazówki do pisania w nawiasach kwadratowych
 > — **do usunięcia przed wklejeniem do dokumentu**.
+>
+> **Ustalenie 2026-11-28:** wstęp i podsumowanie traktujemy jako pełnoprawne, numerowane
+> rozdziały (1 i 9) — zgodnie z poniższym spisem, świadomie wbrew sugerowanej przez
+> standard układzie „wstęp/zakończenie jako części nienumerowane". Do potwierdzenia
+> przy okazji konsultacji z promotorem, ale numeracja pozostaje 1–9.
 
 1. **Wstęp**
    - 1.1. Cel i zakres pracy
@@ -53,6 +58,20 @@
    - 8.3. Integracja kolejnych źródeł danych *(GOG/Epic, wishlisty, dane społeczności)*
 
 9. **Podsumowanie i wnioski**
+
+Bibliografia
+   *(wg wzorów WSB; opcjonalny podział: wydawnictwa zwarte / artykuły w wydawnictwach
+   zwartych i ciągłych / akty prawne / netografia — źródła internetowe z datą dostępu)*
+
+Wykaz tablic
+
+Wykaz rysunków
+   *(diagram architektury, diagram DB, schematy blokowe algorytmów — wymagane dla prac
+   z tworzenia oprogramowania, patrz sekcja XII standardu)*
+
+Wykaz załączników
+   - Załącznik A. Instrukcja uruchomienia i struktura repozytorium
+     *(kod całego programu — załącznik lub nośnik elektroniczny, patrz sekcja XII standardu)*
 
 ---
 

@@ -41,7 +41,8 @@
 
 ## 4. Pisanie pracy (rozdziały wg ustalonego spisu treści)
 
-- [ ] **1. Wstęp** (dopytać promotora: czy wymagana sekcja „Struktura pracy")
+- [ ] **1. Wstęp** (numeracja: wstęp = rozdz. 1, podsumowanie = rozdz. 9 — ustalone
+      2026-11-28; dopytać promotora tylko: czy wymagana sekcja „Struktura pracy")
 - [ ] **2. Przegląd technologii** (2.1–2.5; uwaga: „modele językowe" → doprecyzować,
       że używamy wyłącznie embeddingów)
 - [ ] **3. Analiza wymagań** (3.1–3.3; niefunkcjonalne: limity OpenAI z kodu)
@@ -54,6 +55,10 @@
 - [ ] **8. Możliwość rozbudowy** (skalowanie, re-ranking, kolejne źródła;
       kolumny tabeli z sugestii agenta: rok wydania, platformy, gatunki…)
 - [ ] **9. Podsumowanie i wnioski**
+- [ ] **Części końcowe**: bibliografia (wzory WSB: wydawnictwa zwarte / artykuły /
+      akty prawne / netografia z datą dostępu), wykaz tablic, wykaz rysunków,
+      wykaz załączników (Załącznik A: instrukcja uruchomienia + struktura repo) —
+      dodane do spisu treści 2026-11-28, wymagane pkt V.1.f–i zasad i sekcją VIII standardu
 - [ ] Spójność metodologii: „centroid ważony" wszędzie (było „bez wag") — README
       i AGENTS.md już zaktualizowane
 
