@@ -8,9 +8,11 @@ type Props = {
   /** persisted rating of this game (feedback loop); undefined = unrated */
   rating?: number;
   onRate?: (rating: number) => void;
+  /** removes the persisted rating (game returns to candidates) */
+  onRemove?: () => void;
 };
 
-export function RecommendationCard({ item, rating, onRate }: Props) {
+export function RecommendationCard({ item, rating, onRate, onRemove }: Props) {
   const storeUrl = `https://store.steampowered.com/app/${item.steamAppid}`;
 
   return (
@@ -53,7 +55,20 @@ export function RecommendationCard({ item, rating, onRate }: Props) {
         )}
 
         {onRate ? (
-          <RatingSlider rating={rating} onRate={onRate} label={item.name} />
+          <div className="rating-cell">
+            <RatingSlider rating={rating} onRate={onRate} label={item.name} />
+            {onRemove && rating !== undefined && (
+              <button
+                type="button"
+                className="rating-remove"
+                title="Remove rating"
+                aria-label={`Remove rating for ${item.name}`}
+                onClick={onRemove}
+              >
+                ×
+              </button>
+            )}
+          </div>
         ) : null}
 
         <a href={storeUrl} target="_blank" rel="noreferrer">

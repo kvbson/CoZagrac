@@ -8,7 +8,7 @@ import { useRatings } from './useRatings';
 /** Details (table) view of recommendations. Uses the same useRatings()
  * feedback loop as the grid: a rated game drops out of the list. */
 export function RecommendationsTable({ items }: { items: RecommendationItem[] }) {
-  const { ratings, rate, ratingPending } = useRatings();
+  const { ratings, rate, remove, ratingPending } = useRatings();
 
   const columns: GameColumn<RecommendationItem>[] = [
     {
@@ -72,14 +72,32 @@ export function RecommendationsTable({ items }: { items: RecommendationItem[] })
     {
       id: 'rating',
       label: 'Your rating',
-      render: (item) => (
-        <RatingSlider
-          rating={ratings.get(item.steamAppid)}
-          onRate={(value) => rate(item.steamAppid, value)}
-          label={item.name}
-          disabled={ratingPending}
-        />
-      ),
+      render: (item) => {
+        const rating = ratings.get(item.steamAppid);
+
+        return (
+          <span className="rating-cell">
+            <RatingSlider
+              rating={rating}
+              onRate={(value) => rate(item.steamAppid, value)}
+              label={item.name}
+              disabled={ratingPending}
+            />
+            {rating !== undefined && (
+              <button
+                type="button"
+                className="rating-remove"
+                title="Remove rating"
+                aria-label={`Remove rating for ${item.name}`}
+                disabled={ratingPending}
+                onClick={() => remove(item.steamAppid)}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        );
+      },
     },
     {
       id: 'steam',

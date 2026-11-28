@@ -71,10 +71,17 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
       const saved = res.userData;
       if (!saved) return;
 
-      queryClient.setQueryData<UserRatingsResponse>(['ratings'], (current) => {
-        if (!current) return current;
-        const rest = current.items.filter((item) => item.steamAppid !== saved.steamAppid);
-        return { items: [...rest, { ...saved, name: '', headerImage: null }] };
+      // ['ratings'] cache holds the ServiceResponse wrapper (queryFn returns
+      // ratingsService.get() verbatim), so update inside userData
+      queryClient.setQueryData<ServiceResponse<UserRatingsResponse>>(['ratings'], (current) => {
+        if (!current?.userData) return current;
+        const rest = current.userData.items.filter(
+          (item) => item.steamAppid !== saved.steamAppid,
+        );
+        return {
+          ...current,
+          userData: { items: [...rest, { ...saved, name: '', headerImage: null }] },
+        };
       });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
     },
@@ -88,6 +95,8 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
     },
     onSettled: (data, error) => {
       void queryClient.invalidateQueries({ queryKey: ['ratings'] });
+      // the explain panel shows the rating feedback state - keep it live
+      void queryClient.invalidateQueries({ queryKey: ['recommendations-explain'] });
 
       // fetchApi never rejects - a failed save (422/401/network) arrives as
       // data.success === false, so both paths must be checked explicitly
@@ -103,12 +112,51 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
     rateMutation.mutate({ steamAppid, rating });
   };
 
+  /** removes a single rating; the game returns to recommendation candidates */
+  const removeMutation = useMutation({
+    mutationFn: (steamAppid: number) => ratingsService.remove(steamAppid),
+    onSuccess: (_data, steamAppid) => {
+      queryClient.setQueryData<ServiceResponse<UserRatingsResponse>>(['ratings'], (current) => {
+        if (!current?.userData) return current;
+        return {
+          ...current,
+          userData: {
+            items: current.userData.items.filter((item) => item.steamAppid !== steamAppid),
+          },
+        };
+      });
+      // without the rating the game is a candidate again - refetch lists
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    },
+    onSettled: (data, error) => {
+      void queryClient.invalidateQueries({ queryKey: ['ratings'] });
+      // the rated game leaves the library's rated-games section
+      void queryClient.invalidateQueries({ queryKey: ['steam-library'] });
+      // without the rating the game is a candidate again - refetch lists
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      void queryClient.invalidateQueries({ queryKey: ['recommendations-explain'] });
+
+      if (error || !data?.success) {
+        showMessage('error', data?.error?.message ?? 'Could not remove your rating. Please try again.');
+      } else {
+        showMessage('success', 'Rating removed.');
+      }
+    },
+  });
+
+  const remove = (steamAppid: number) => {
+    removeMutation.mutate(steamAppid);
+  };
+
   const resetMutation = useMutation({
     mutationFn: () => ratingsService.removeAll(),
     onSettled: (data, error) => {
       void queryClient.invalidateQueries({ queryKey: ['ratings'] });
       // ratings influence the query-time centroid correction - refresh lists
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      void queryClient.invalidateQueries({ queryKey: ['recommendations-explain'] });
+      // the library rated-games section empties on a full reset
+      void queryClient.invalidateQueries({ queryKey: ['steam-library'] });
 
       if (error || !data?.success) {
         showMessage('error', data?.error?.message ?? 'Could not clear your ratings. Please try again.');
@@ -123,7 +171,8 @@ export function useRatings({ removeFromRecommendations = true }: Options = {}) {
   return {
     ratings,
     rate,
+    remove,
     resetAll,
-    ratingPending: rateMutation.isPending || resetMutation.isPending,
+    ratingPending: rateMutation.isPending || removeMutation.isPending || resetMutation.isPending,
   };
 }

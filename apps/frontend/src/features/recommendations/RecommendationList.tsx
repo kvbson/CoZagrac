@@ -3,7 +3,7 @@ import { RecommendationCard } from './RecommendationCard';
 import { useRatings } from './useRatings';
 
 export function RecommendationList({ items }: { items: RecommendationItem[] }) {
-  const { rate } = useRatings();
+  const { ratings, rate, remove } = useRatings();
 
   return (
     <div className="rec-grid">
@@ -11,7 +11,13 @@ export function RecommendationList({ items }: { items: RecommendationItem[] }) {
         <RecommendationCard
           key={item.steamAppid}
           item={item}
+          rating={ratings.get(item.steamAppid)}
           onRate={(rating) => rate(item.steamAppid, rating)}
+          onRemove={
+            ratings.get(item.steamAppid) !== undefined
+              ? () => remove(item.steamAppid)
+              : undefined
+          }
         />
       ))}
     </div>

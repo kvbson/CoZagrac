@@ -960,6 +960,86 @@ select {
   background: rgba(102, 192, 244, 0.18);
 }
 
+/* ---- library tabs ---- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  box-shadow: none;
+  margin-bottom: -1px;
+}
+.tab:hover:not(:disabled) {
+  color: #ffffff;
+}
+.tab--active {
+  color: #ffffff;
+  border-bottom-color: var(--accent);
+}
+.tab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---- rating remove button + slider/remove layout ---- */
+.rating-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rating-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.rating-remove:hover:not(:disabled) {
+  border-color: var(--sale);
+  color: var(--sale);
+}
+.rating-remove:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.card__meta .rating-remove {
+  margin-left: auto;
+}
+
+/* ---- library sections ---- */
+.library__section-title {
+  margin: 28px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.library__section-title .badge {
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
 /* ---- recommendation explain panel ---- */
 .explain {
   margin: 0 0 16px;
