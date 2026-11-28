@@ -36,13 +36,27 @@
       nowa kolejność po refetchu; biblioteka → ocena → zostaje; reset → stan wyjściowy
 - [ ] Recenzje: potwierdzić na dev, że pusta strona to `200 {items: []}` (frontend nie
       mapuje już 404)
-- [ ] (opcjonalnie) Testy frontendu (Testing Library) — RatingSlider, useRatings;
+- [ ] Audyt przypisów podstawy_teoretyczne.docx — WYKONANY 2026-11-28: zweryfikowano
+      42 przypisy (20 pozycji źródłowych); 3 błędy poprawione w pliku:
+      (a) „Silva N. i in." → **Panda D. K., Ray S.** (cold start SLR, JIIS 2022 — halucynacja
+      autora, przypisy 8/32/33/36),
+      (b) Yang et al. — zła publikacja i strony: Companion WWW'22 s. 541–552 →
+      **Proceedings of the ACM Web Conference 2022 (WWW '22), s. 3376–3386** (przypis 3),
+      (c) Zangerle & Bauer, ACM Comput. Surv. — „nr 112" → **nr 8, art. 170, s. 1–38** (przypis 39).
+      Pozostałe 17 pozycji potwierdzone (Salton 1975, Koren 2009, Hu 2008, Malkov 2020,
+      Reimers 2019, Mikolov 2013, Devlin 2018, Manning 2008, Ricci 2015, Shani 2011,
+      Joachims 1997, Rocchio 1971, McAuley, pgvector, Valve, OpenAI docs+FAQ).
+      Ujednolicenie zapisu WYKONANE 2026-11-28: „vol. X" → „t. X" we wszystkich
+      czasopismach (5 miejsc); nie ma już „vol." w przypisach.- [ ] (opcjonalnie) Testy frontendu (Testing Library) — RatingSlider, useRatings;
       w pracy można opisać zakres uczciwie
 
 ## 4. Pisanie pracy (rozdziały wg ustalonego spisu treści)
 
-- [ ] **1. Wstęp** (numeracja: wstęp = rozdz. 1, podsumowanie = rozdz. 9 — ustalone
-      2026-11-28; dopytać promotora tylko: czy wymagana sekcja „Struktura pracy")
+- [ ] **Draft rozdz. 1 (wstęp)** — gotowy tekst roboczy 0.1: `docs/wip/rozdzial_01_wstep_draft.md`
+      (problem badawczy, cel, zakres, metody, struktura, sekcja deklaracji AI 1.4 wg
+      zarządzenia 140). Do redakcji studenta; notatki na końcu pliku: liczby z bazy,
+      źródło statystyk Steam, link do zarządzenia, rejestr AI (utworzyć
+      `docs/wip/rejestr_ai.md`).
 - [ ] **2. Przegląd technologii** (2.1–2.5; uwaga: „modele językowe" → doprecyzować,
       że używamy wyłącznie embeddingów)
 - [ ] **3. Analiza wymagań** (3.1–3.3; niefunkcjonalne: limity OpenAI z kodu)
